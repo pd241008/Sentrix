@@ -1,0 +1,22 @@
+[package]
+name = "liteguard"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "liteguard"
+path = "src/lib.rs"
+
+[[bin]]
+name = "liteguard"
+path = "src/main.rs"
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
