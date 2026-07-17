@@ -1,3 +1,3 @@
 fn main() {
-    liteguard::run();
+    println!("liteguard — skeleton");
 }
