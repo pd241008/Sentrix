@@ -1,3 +1,3 @@
 fn main() {
-    println!("liteguard — skeleton");
+    println!("sentrix — skeleton");
 }
