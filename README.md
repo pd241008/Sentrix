@@ -115,14 +115,14 @@ flowchart LR
     MOD["platform/mod.rs"]
 
     subgraph cfg["cfg-gated re-exports"]
-        LIN["linux.rs<br/>check_processes()<br/>check_persistence()"]
-        WIN["windows.rs<br/>check_processes()<br/>check_persistence()"]
-        MAC["macos.rs<br/>check_processes()<br/>check_persistence()"]
+        LIN["linux.rs\ncheck_processes()\ncheck_persistence()"]
+        WIN["windows.rs\ncheck_processes()\ncheck_persistence()"]
+        MAC["macos.rs\ncheck_processes()\ncheck_persistence()"]
     end
 
-    MOD -->|cfg(target_os = "linux"| LIN
-    MOD -->|cfg(target_os = "windows")| WIN
-    MOD -->|cfg(target_os = "macos")| MAC
+    MOD -->|"cfg(target_os = linux)"| LIN
+    MOD -->|"cfg(target_os = windows)"| WIN
+    MOD -->|"cfg(target_os = macos)"| MAC
 ```
 
 Only **one** platform module is ever compiled into the binary.
