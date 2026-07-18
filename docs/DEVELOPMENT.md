@@ -194,10 +194,10 @@ cargo test test_report            # run tests matching name
 
 ### Test Organization
 
-| Location | What it tests |
-|----------|--------------|
-| `tests/integration.rs` | Cross-module behavior, public API |
-| `src/*/tests.rs` (future) | Module-internal logic |
+| Location | What it tests | Status |
+|----------|--------------|--------|
+| `tests/integration.rs` | Cross-module behavior, public API | Stub only — needs implementation |
+| `src/*/tests.rs` (future) | Module-internal logic | Not started |
 
 ### What to Test
 
