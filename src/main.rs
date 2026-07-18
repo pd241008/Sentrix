@@ -1,4 +1,5 @@
 use clap::Parser;
+use sentrix::{run, ScanOptions};
 
 #[derive(Parser)]
 #[command(name = "sentrix", version, about = "Lightweight heuristic malware triage scanner")]
@@ -13,6 +14,22 @@ pub struct Cli {
 }
 
 fn main() {
-    let _cli = Cli::parse();
-    println!("sentrix — skeleton");
+    let cli = Cli::parse();
+
+    let opts = ScanOptions { quick: cli.quick };
+    let report = run(&opts);
+
+    if let Some(path) = &cli.out {
+        if let Err(e) = std::fs::write(path, report.join()) {
+            eprintln!("error: could not write report to {}: {}", path, e);
+            std::process::exit(1);
+        }
+        eprintln!("report written to {} ({} findings)", path, report.findings);
+    } else {
+        print!("{}", report.join());
+    }
+
+    if report.findings > 0 {
+        std::process::exit(2);
+    }
 }
