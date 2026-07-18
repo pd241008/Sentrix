@@ -12,6 +12,7 @@ name = "sentrix"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
