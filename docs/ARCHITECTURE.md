@@ -193,6 +193,10 @@ struct Finding {
 This enables JSON/SARIF output, filtering by severity, and programmatic
 consumption. The current string-based approach is a placeholder.
 
+> **Roadmap:** Structured output (`--json`) is tracked as priority #5 in
+> [PROGRESS.md](PROGRESS.md#5-structured-output---json). The `Severity`
+> enum and `Finding` struct shown above are the planned implementation.
+
 ---
 
 ## Scan Lifecycle

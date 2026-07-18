@@ -25,6 +25,7 @@ triage scanner, written in Rust with minimal dependencies.
 - [Adding a New Platform](#adding-a-new-platform)
 - [Testing](#testing)
 - [Limitations](#limitations)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 ---
@@ -190,7 +191,8 @@ Sentrix/
 | Persistence — cron | `/etc/crontab`, `/etc/cron.d/*` | — | — |
 | Persistence — shell rc | `.bashrc`, `.profile` download-exec patterns | — | — |
 | Persistence — registry | — | `HKCU`/`HKLM` `Run` + `RunOnce` keys | — |
-| Persistence — launch agents | — | — | `~/Library/LaunchAgents`, `/Library/LaunchAgents`, `/Library/LaunchDaemons` |
+| Persistence — scheduled tasks | — | File timestamps in `System32\Tasks` only *(no schtasks parsing)* | — |
+| Persistence — launch agents | — | — | `~/Library/LaunchAgents`, `/Library/LaunchAgents`, `/Library/LaunchDaemons` *(no launchctl list)* |
 | Recently modified files | `/tmp`, `/dev/shm`, `/var/tmp` | `%LOCALAPPDATA%\Temp`, `C:\Users\Public` | `/tmp`, `/var/tmp`, `/private/tmp`, `/Users/Shared` |
 
 **Suspicious patterns detected in persistence entries:**
@@ -298,10 +300,15 @@ cargo test            # run all tests
 cargo test -- --nocapture  # show println! output
 ```
 
-Tests cover:
+**Current status:** `tests/integration.rs` exists but is not yet populated.
+Planned test coverage:
+
 - `Report` struct behavior (section, flag, log)
-- Config output (suspicious dirs not empty)
-- Scanner edge cases (nonexistent directories)
+- Config output (suspicious dirs not empty, constants correct)
+- Scanner edge cases (nonexistent directories, empty files, permission errors)
+- One test per suspicious pattern in `config.rs` to guard against regressions
+
+See [docs/PROGRESS.md](docs/PROGRESS.md#6-test-coverage) for full status.
 
 ---
 
@@ -310,8 +317,29 @@ Tests cover:
 - **No real-time monitoring** — single-shot scan only.
 - **No signature scanning** — heuristic only, will miss known malware without suspicious indicators.
 - **No remediation** — reports findings, never removes/quarantines.
-- **Platform-specific depth varies** — Linux checks are deeper than Windows/macOS due to `/proc` availability.
+- **Platform-specific depth varies** — Linux checks are deeper than Windows/macOS (see [Roadmap](#roadmap) #3 for parity gaps).
 - **No elevated by default** — needs `sudo`/Admin for full visibility.
+- **No CI** — cross-platform compilation is not yet verified by automated testing (see [Roadmap](#roadmap) #1).
+- **No external config** — detection patterns are compile-time constants (see [Roadmap](#roadmap) #4).
+- **No structured output** — plain text only, no JSON/SARIF (see [Roadmap](#roadmap) #5).
+- **Tests not yet implemented** — `tests/integration.rs` is a stub (see [Roadmap](#roadmap) #6).
+
+---
+
+## Roadmap
+
+| Priority | Item | Status |
+|----------|------|--------|
+| 1 | CI (`cargo build`/`test`/`clippy`/`fmt` on all 3 OSes) | Not started |
+| 2 | Example output in README | Not started |
+| 3 | Windows/macOS parity (schtasks, launchctl, WMI) | Partial (~50%) |
+| 4 | Configurable detection patterns (external TOML/YAML) | Not started |
+| 5 | Structured output (`--json`, severity levels) | Not started |
+| 6 | Test coverage (unit tests, tarpaulin/grcov, badge) | Not started |
+| 7 | Nice-to-haves (`--diff`, `CONTRIBUTING.md`) | Not started |
+
+See [docs/PROGRESS.md](docs/PROGRESS.md#roadmap-status) for detailed status,
+gaps, and implementation notes for each item.
 
 ---
 
