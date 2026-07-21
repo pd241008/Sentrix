@@ -54,6 +54,17 @@ pub const SUSPICIOUS_AUTORUN_PATTERNS: &[&str] = &[
     "certutil -decode",
 ];
 
+#[cfg(target_os = "windows")]
+pub const SUSPICIOUS_TASK_ACTIONS: &[&str] = &[
+    "powershell",
+    "cmd /c",
+    "mshta",
+    "certutil",
+    "\\temp\\",
+    "\\appdata\\",
+    "\\users\\public",
+];
+
 #[cfg(target_os = "macos")]
 pub fn launch_agent_dirs() -> Vec<PathBuf> {
     let home = std::env::var("HOME").unwrap_or_default();
@@ -67,6 +78,13 @@ pub fn launch_agent_dirs() -> Vec<PathBuf> {
 
 #[cfg(target_os = "macos")]
 pub const SUSPICIOUS_PLIST_PATTERNS: &[&str] = &["curl", "wget", "/tmp/", "base64"];
+
+#[cfg(target_os = "macos")]
+pub const SUSPICIOUS_CRON_PATTERNS: &[&str] = &["curl", "wget", "base64", "/tmp/"];
+
+#[cfg(target_os = "macos")]
+pub const SUSPICIOUS_LAUNCHCTL_OUTPUT: &[&str] =
+    &["curl", "wget", "/tmp/", "base64", "mshta", "powershell"];
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub const SHELL_RC_FILES: &[&str] = &[".bashrc", ".profile"];

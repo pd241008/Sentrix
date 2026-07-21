@@ -67,24 +67,24 @@ findings are fine. 10-minute addition with outsized trust payoff.
 
 ### 3. Windows / macOS Parity
 
-**Status: Partial (~50%)**
+**Status: High (~85%)**
 
-All three platforms have basic detection, but Linux is significantly deeper.
+All three platforms have process metadata, persistence, and recent file detection.
 
 | Feature | Linux | Windows | macOS |
 |---------|-------|---------|-------|
-| Process metadata | Deep: `/proc/*/exe` symlinks, deleted binary detection | Shallow: string-matching on `tasklist` CSV | Shallow: `ps -axo pid,comm` command names |
+| Process metadata | Deep: `/proc/*/exe` symlinks, deleted binary detection | Deep: `wmic` with full `ExecutablePath` (tasklist fallback) | Deep: `ps -axo pid,args` with full executable paths |
 | Deleted-but-running binaries | Yes (`(deleted)` flag) | No | No |
-| Persistence | Cron, shell rc download-exec patterns | Registry Run/RunOnce keys | LaunchAgent/LaunchDaemon plist files |
-| Scheduled Tasks | N/A | Partial — only scans `C:\Windows\System32\Tasks` for recent files; does NOT parse task XML or enumerate via `schtasks` | N/A |
-| launchctl | N/A | N/A | Not present — only reads plist files on disk, does NOT run `launchctl list` |
-| Recent files | `/tmp`, `/dev/shm`, `/var/tmp` | `%LOCALAPPDATA%\Temp`, `C:\Users\Public` | `/tmp`, `/var/tmp`, `/private/tmp`, `/Users/Shared` |
+| Persistence — cron | `/etc/crontab`, `/etc/cron.d/*` | — | `/etc/crontab`, `/etc/cron.d/*`, per-user `crontab -l` |
+| Persistence — shell rc | `.bashrc`, `.profile` download-exec patterns | — | — |
+| Persistence — registry | — | `HKCU`/`HKLM` `Run` + `RunOnce` keys | — |
+| Persistence — scheduled tasks | N/A | `schtasks /query` with action pattern matching | N/A |
+| Persistence — launch agents | — | — | On-disk plist scan + `launchctl list` cross-reference |
+| Recently modified files | `/tmp`, `/dev/shm`, `/var/tmp` | `%LOCALAPPDATA%\Temp`, `C:\Users\Public` | `/tmp`, `/var/tmp`, `/private/tmp`, `/Users/Shared` |
 
-**Key gaps to close:**
-
-- **Windows:** Parse `schtasks /query /fo list /v` or task XML for registered scheduled tasks (common malware persistence vector). Use WMI (`wmic`) for richer process metadata.
-- **macOS:** Run `launchctl list` and cross-reference against on-disk LaunchAgents/Daemons to catch mismatches. Add `crontab -l` per-user.
-- **Both:** Bring "recent files" checks to full parity with Linux's coverage.
+**Remaining gaps:**
+- **Windows:** Could add WMI process metadata for even richer info.
+- **macOS:** Could cross-reference launchctl PIDs against on-disk plists more deeply.
 - **Neither** Windows nor macOS can detect deleted-but-running binaries (Linux `/proc` advantage).
 
 ### 4. Configurable Detection Patterns
