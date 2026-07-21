@@ -2,7 +2,11 @@ use clap::Parser;
 use sentrix::{run, ScanOptions};
 
 #[derive(Parser)]
-#[command(name = "sentrix", version, about = "Lightweight heuristic malware triage scanner")]
+#[command(
+    name = "sentrix",
+    version,
+    about = "Lightweight heuristic malware triage scanner"
+)]
 pub struct Cli {
     /// Run a quick scan (skip recently modified files check)
     #[arg(short, long)]

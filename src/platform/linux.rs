@@ -65,11 +65,7 @@ pub fn check_persistence(report: &mut Report) {
                     if trimmed.is_empty() || trimmed.starts_with('#') {
                         continue;
                     }
-                    report.log(format!(
-                        "cron ({}): {}",
-                        entry.path().display(),
-                        trimmed
-                    ));
+                    report.log(format!("cron ({}): {}", entry.path().display(), trimmed));
                 }
             }
         }
