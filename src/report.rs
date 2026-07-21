@@ -5,6 +5,12 @@ pub struct Report {
     pub findings: u32,
 }
 
+impl Default for Report {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Report {
     pub fn new() -> Self {
         Report {
