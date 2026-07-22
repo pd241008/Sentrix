@@ -189,16 +189,20 @@ Sentrix/
 | Suspicious process locations | `/proc/*/exe` from `/tmp`, `/dev/shm`, `/var/tmp` | `wmic` with full `ExecutablePath` (tasklist fallback) | `ps -axo pid,args` with full executable paths |
 | Deleted-but-running binaries | `(deleted)` in `/proc/*/exe` | — | — |
 | Persistence — cron | `/etc/crontab`, `/etc/cron.d/*` | — | `/etc/crontab`, `/etc/cron.d/*`, per-user `crontab -l` |
-| Persistence — shell rc | `.bashrc`, `.profile` download-exec patterns | — | — |
+| Persistence — shell rc | `.bashrc`, `.profile` download-exec patterns | — | `.zshrc`, `.bash_profile`, `.zprofile` download-exec patterns |
 | Persistence — registry | — | `HKCU`/`HKLM` `Run` + `RunOnce` keys | — |
 | Persistence — scheduled tasks | — | `schtasks /query` with action pattern matching | — |
 | Persistence — launch agents | — | — | On-disk plist scan + `launchctl list` cross-reference |
+| Persistence — startup folder | — | `AppData\Roaming\...\Startup` directory scan | — |
+| Persistence — WMI events | — | WMI `__EventConsumer` command pattern matching | — |
+| Persistence — services | — | `wmic service` path pattern matching | — |
+| Persistence — kernel extensions | — | — | `/Library/Extensions`, `/System/Library/Extensions` scan |
 | Recently modified files | `/tmp`, `/dev/shm`, `/var/tmp` | `%LOCALAPPDATA%\Temp`, `C:\Users\Public` | `/tmp`, `/var/tmp`, `/private/tmp`, `/Users/Shared` |
 
 **Suspicious patterns detected in persistence entries:**
 
-- Windows: `powershell`, `cmd /c`, `mshta`, `certutil`, temp/public paths (registry + scheduled tasks)
-- macOS: `curl`, `wget`, `/tmp/`, `base64` in plist files and crontab entries
+- Windows: `powershell`, `cmd /c`, `mshta`, `certutil`, temp/public paths (registry + scheduled tasks + services + WMI)
+- macOS: `curl`, `wget`, `/tmp/`, `base64` in plist files, crontab entries, and shell rc files
 - Linux: `curl|bash`, `wget|sh`, `base64 -d`, `/dev/tcp/` in shell rc files
 
 ---
@@ -320,7 +324,7 @@ See [docs/PROGRESS.md](docs/PROGRESS.md#6-test-coverage) for full status.
 - **No real-time monitoring** — single-shot scan only.
 - **No signature scanning** — heuristic only, will miss known malware without suspicious indicators.
 - **No remediation** — reports findings, never removes/quarantines.
-- **Platform-specific depth varies** — Linux checks are deeper than Windows/macOS (see [Roadmap](#roadmap) #3 for parity gaps, now at ~85%).
+- **Platform-specific depth varies** — Linux checks are deeper than Windows/macOS (see [Roadmap](#roadmap) #3 for parity gaps, now at ~95%).
 - **No elevated by default** — needs `sudo`/Admin for full visibility.
 - **No CI** — cross-platform compilation is not yet verified by automated testing (see [Roadmap](#roadmap) #1).
 - **No external config** — detection patterns are compile-time constants (see [Roadmap](#roadmap) #4).
@@ -335,7 +339,7 @@ See [docs/PROGRESS.md](docs/PROGRESS.md#6-test-coverage) for full status.
 |----------|------|--------|
 | 1 | CI (`cargo build`/`test`/`clippy`/`fmt` on all 3 OSes) | Not started |
 | 2 | Example output in README | Not started |
-| 3 | Windows/macOS parity (schtasks, launchctl, WMI) | High (~85%) |
+| 3 | Windows/macOS parity (schtasks, launchctl, WMI) | High (~95%) |
 | 4 | Configurable detection patterns (external TOML/YAML) | Not started |
 | 5 | Structured output (`--json`, severity levels) | Not started |
 | 6 | Test coverage (unit tests, tarpaulin/grcov, badge) | Not started |
