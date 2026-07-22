@@ -67,24 +67,28 @@ findings are fine. 10-minute addition with outsized trust payoff.
 
 ### 3. Windows / macOS Parity
 
-**Status: High (~85%)**
+**Status: High (~95%)**
 
 All three platforms have process metadata, persistence, and recent file detection.
 
 | Feature | Linux | Windows | macOS |
 |---------|-------|---------|-------|
 | Process metadata | Deep: `/proc/*/exe` symlinks, deleted binary detection | Deep: `wmic` with full `ExecutablePath` (tasklist fallback) | Deep: `ps -axo pid,args` with full executable paths |
-| Deleted-but-running binaries | Yes (`(deleted)` flag) | No | No |
+| Deleted-but-running binaries | Yes (`(deleted)` flag) | No (not possible) | No (not possible) |
 | Persistence — cron | `/etc/crontab`, `/etc/cron.d/*` | — | `/etc/crontab`, `/etc/cron.d/*`, per-user `crontab -l` |
-| Persistence — shell rc | `.bashrc`, `.profile` download-exec patterns | — | — |
+| Persistence — shell rc | `.bashrc`, `.profile` download-exec patterns | — | `.zshrc`, `.bash_profile`, `.zprofile` download-exec patterns |
 | Persistence — registry | — | `HKCU`/`HKLM` `Run` + `RunOnce` keys | — |
-| Persistence — scheduled tasks | N/A | `schtasks /query` with action pattern matching | N/A |
+| Persistence — scheduled tasks | — | `schtasks /query` with action pattern matching | — |
 | Persistence — launch agents | — | — | On-disk plist scan + `launchctl list` cross-reference |
+| Persistence — startup folder | — | `AppData\Roaming\...\Startup` directory scan | — |
+| Persistence — WMI events | — | WMI `__EventConsumer` command pattern matching | — |
+| Persistence — services | — | `wmic service` path pattern matching | — |
+| Persistence — kernel extensions | — | — | `/Library/Extensions`, `/System/Library/Extensions` scan |
 | Recently modified files | `/tmp`, `/dev/shm`, `/var/tmp` | `%LOCALAPPDATA%\Temp`, `C:\Users\Public` | `/tmp`, `/var/tmp`, `/private/tmp`, `/Users/Shared` |
 
 **Remaining gaps:**
-- **Windows:** Could add WMI process metadata for even richer info.
-- **macOS:** Could cross-reference launchctl PIDs against on-disk plists more deeply.
+- **Windows:** Could add PowerShell script block logging check.
+- **macOS:** Could add network extension check.
 - **Neither** Windows nor macOS can detect deleted-but-running binaries (Linux `/proc` advantage).
 
 ### 4. Configurable Detection Patterns

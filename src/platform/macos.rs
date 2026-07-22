@@ -1,6 +1,7 @@
 use crate::config::{
-    launch_agent_dirs, path_is_suspicious, suspicious_dirs, SUSPICIOUS_CRON_PATTERNS,
-    SUSPICIOUS_LAUNCHCTL_OUTPUT, SUSPICIOUS_PLIST_PATTERNS,
+    launch_agent_dirs, path_is_suspicious, suspicious_dirs, MACOS_KEXT_SCAN_DIRS,
+    MACOS_SHELL_RC_FILES, SUSPICIOUS_CRON_PATTERNS, SUSPICIOUS_LAUNCHCTL_OUTPUT,
+    SUSPICIOUS_PLIST_PATTERNS,
 };
 use crate::report::Report;
 use std::collections::HashSet;
@@ -145,6 +146,41 @@ pub fn check_persistence(report: &mut Report) {
                         continue;
                     }
                     report.log(format!("cron ({}): {}", entry.path().display(), trimmed));
+                }
+            }
+        }
+    }
+
+    // Shell rc file scanning
+    report.section("Persistence (shell rc files)");
+    let home = std::env::var("HOME").unwrap_or_default();
+    for rc_name in MACOS_SHELL_RC_FILES {
+        let rc = format!("{}/{}", home, rc_name);
+        if let Ok(content) = fs::read_to_string(&rc) {
+            let lower = content.to_lowercase();
+            let dl_exec = (lower.contains("curl") || lower.contains("wget"))
+                && (lower.contains("| bash") || lower.contains("| sh"));
+            if dl_exec || lower.contains("base64 -d") || lower.contains("/dev/tcp/") {
+                report.flag(format!(
+                    "Suspicious download-and-execute / reverse-shell pattern in {}",
+                    rc
+                ));
+            }
+        }
+    }
+
+    // Kernel extension scanning
+    report.section("Persistence (kernel extensions)");
+    for kext_dir in MACOS_KEXT_SCAN_DIRS {
+        let dir = Path::new(kext_dir);
+        if !dir.is_dir() {
+            continue;
+        }
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().map(|e| e == "kext").unwrap_or(false) {
+                    report.log(format!("Kernel extension: {}", path.display()));
                 }
             }
         }

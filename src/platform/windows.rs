@@ -1,6 +1,6 @@
 use crate::config::{
     suspicious_dirs, PERSISTENCE_REGISTRY_RUN_PATHS, SUSPICIOUS_AUTORUN_PATTERNS,
-    SUSPICIOUS_TASK_ACTIONS,
+    SUSPICIOUS_SERVICE_PATTERNS, SUSPICIOUS_TASK_ACTIONS, WMI_EVENT_CONSUMER_PATTERNS,
 };
 use crate::report::Report;
 use std::process::Command;
@@ -143,6 +143,97 @@ pub fn check_persistence(report: &mut Report) {
         }
     } else {
         report.log("(i) Could not run schtasks to enumerate scheduled tasks.");
+    }
+
+    // Startup folder check
+    report.section("Persistence (Startup folder)");
+    let appdata = std::env::var("APPDATA").unwrap_or_default();
+    if !appdata.is_empty() {
+        let startup_dir = std::path::Path::new(&appdata)
+            .join("Microsoft")
+            .join("Windows")
+            .join("Start Menu")
+            .join("Programs")
+            .join("Startup");
+        if let Ok(entries) = std::fs::read_dir(&startup_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    report.log(format!("Startup item: {}", path.display()));
+                }
+            }
+        }
+    }
+
+    // WMI event subscription check
+    report.section("Persistence (WMI event subscriptions)");
+    let output = Command::new("wmic")
+        .args([
+            "/namespace:\\\\root\\subscription",
+            "path",
+            "__EventConsumer",
+            "get",
+            "CommandLineTemplate",
+            "/format:csv",
+        ])
+        .output();
+    if let Ok(out) = output {
+        let text = String::from_utf8_lossy(&out.stdout);
+        for line in text.lines().skip(1) {
+            let line = line.trim();
+            if line.is_empty() || line.contains("CommandLineTemplate") {
+                continue;
+            }
+            let lower = line.to_lowercase();
+            if WMI_EVENT_CONSUMER_PATTERNS
+                .iter()
+                .any(|pat| lower.contains(pat))
+            {
+                report.flag(format!("Suspicious WMI event consumer command: {}", line));
+            } else {
+                report.log(format!("WMI event consumer: {}", line));
+            }
+        }
+    } else {
+        report.log("(i) Could not query WMI event consumers.");
+    }
+
+    // Services check
+    report.section("Persistence (Services)");
+    let output = Command::new("wmic")
+        .args(["service", "get", "Name,PathName,StartMode", "/format:csv"])
+        .output();
+    if let Ok(out) = output {
+        let text = String::from_utf8_lossy(&out.stdout);
+        for line in text.lines().skip(1) {
+            let line = line.trim();
+            if line.is_empty() || line.contains("PathName") {
+                continue;
+            }
+            let fields: Vec<&str> = line.split(',').collect();
+            if fields.len() < 3 {
+                continue;
+            }
+            let name = fields[1].trim();
+            let path_name = fields[2].trim();
+            if path_name.is_empty() {
+                continue;
+            }
+            let lower = path_name.to_lowercase();
+            if SUSPICIOUS_SERVICE_PATTERNS
+                .iter()
+                .any(|pat| lower.contains(pat))
+            {
+                report.flag(format!(
+                    "Suspicious service path: {} -> {}",
+                    name, path_name
+                ));
+            } else {
+                report.log(format!("Service: {} -> {}", name, path_name));
+            }
+        }
+    } else {
+        report.log("(i) Could not query WMI services.");
     }
 
     crate::scanner::recent_files::run(

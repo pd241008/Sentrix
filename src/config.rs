@@ -91,3 +91,30 @@ pub const SHELL_RC_FILES: &[&str] = &[".bashrc", ".profile"];
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
 pub const PERSISTENCE_SCAN_DIRS: &[&str] = &["/etc", "/usr/local/bin"];
+
+#[cfg(target_os = "macos")]
+pub const MACOS_SHELL_RC_FILES: &[&str] = &[".zshrc", ".bash_profile", ".zprofile"];
+
+#[cfg(target_os = "macos")]
+pub const MACOS_KEXT_SCAN_DIRS: &[&str] = &["/Library/Extensions", "/System/Library/Extensions"];
+
+#[cfg(target_os = "windows")]
+pub const SUSPICIOUS_SERVICE_PATTERNS: &[&str] = &[
+    "\\temp\\",
+    "\\appdata\\local\\temp",
+    "\\users\\public",
+    "powershell",
+    "cmd /c",
+    "mshta",
+    "certutil",
+];
+
+#[cfg(target_os = "windows")]
+pub const WMI_EVENT_CONSUMER_PATTERNS: &[&str] = &[
+    "powershell",
+    "cmd /c",
+    "mshta",
+    "certutil",
+    "wscript",
+    "cscript",
+];
