@@ -1,0 +1,75 @@
+# Sentrix Configuration File
+# Customize detection patterns and scan settings
+
+# General settings
+recent_file_days = 3
+
+# Windows-specific patterns
+[windows]
+suspicious_autorun_patterns = [
+    "powershell -enc",
+    "-windowstyle hidden",
+    "\\appdata\\local\\temp",
+    "\\users\\public",
+    "mshta",
+    "certutil -decode",
+]
+suspicious_task_actions = [
+    "powershell",
+    "cmd /c",
+    "mshta",
+    "certutil",
+    "\\temp\\",
+    "\\appdata\\",
+    "\\users\\public",
+]
+suspicious_powershell_patterns = [
+    "invoke-expression",
+    "iex(",
+    "iex (",
+    "downloadstring",
+    "invoke-webrequest",
+    "start-process",
+    "encodedcommand",
+    "frombase64string",
+    "bitstransfer",
+    "start-bitstransfer",
+    "invoke-cimmethod",
+    "get-wmiobject",
+    "hidden",
+    "-nop",
+    "-noni",
+    "bypass",
+    "downloadfile",
+    "invoke-restmethod",
+    "new-object net.webclient",
+]
+suspicious_service_patterns = [
+    "\\temp\\",
+    "\\appdata\\local\\temp",
+    "\\users\\public",
+    "powershell",
+    "cmd /c",
+    "mshta",
+    "certutil",
+]
+wmi_event_consumer_patterns = [
+    "powershell",
+    "cmd /c",
+    "mshta",
+    "certutil",
+    "wscript",
+    "cscript",
+]
+
+# macOS-specific patterns
+[macos]
+suspicious_plist_patterns = ["curl", "wget", "/tmp/", "base64"]
+suspicious_cron_patterns = ["curl", "wget", "base64", "/tmp/"]
+suspicious_launchctl_output = ["curl", "wget", "/tmp/", "base64", "mshta", "powershell"]
+shell_rc_files = [".zshrc", ".bash_profile", ".zprofile"]
+
+# Linux-specific settings
+[linux]
+shell_rc_files = [".bashrc", ".profile"]
+persistence_scan_dirs = ["/etc", "/usr/local/bin"]

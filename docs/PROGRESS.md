@@ -67,7 +67,7 @@ findings are fine. 10-minute addition with outsized trust payoff.
 
 ### 3. Windows / macOS Parity
 
-**Status: High (~95%)**
+**Status: Complete (100%)**
 
 All three platforms have process metadata, persistence, and recent file detection.
 
@@ -84,26 +84,24 @@ All three platforms have process metadata, persistence, and recent file detectio
 | Persistence — WMI events | — | WMI `__EventConsumer` command pattern matching | — |
 | Persistence — services | — | `wmic service` path pattern matching | — |
 | Persistence — kernel extensions | — | — | `/Library/Extensions`, `/System/Library/Extensions` scan |
+| Persistence — PowerShell script blocks | — | `Get-WinEvent` with `Microsoft-Windows-PowerShell/Operational` log | — |
+| Persistence — network extensions | — | — | `/Library/SystemExtensions`, `/Library/NetworkExtensions` scan |
 | Recently modified files | `/tmp`, `/dev/shm`, `/var/tmp` | `%LOCALAPPDATA%\Temp`, `C:\Users\Public` | `/tmp`, `/var/tmp`, `/private/tmp`, `/Users/Shared` |
 
-**Remaining gaps:**
-- **Windows:** Could add PowerShell script block logging check.
-- **macOS:** Could add network extension check.
-- **Neither** Windows nor macOS can detect deleted-but-running binaries (Linux `/proc` advantage).
+**Note:** Neither Windows nor macOS can detect deleted-but-running binaries (Linux `/proc` advantage).
 
 ### 4. Configurable Detection Patterns
 
-**Status: Hardcoded only (~20%)**
+**Status: Complete (100%)**
 
-All detection patterns live in `src/config.rs` as compile-time constants.
-No external config file loading exists. No `--config` CLI flag. Changing
-any pattern requires modifying `config.rs` and recompiling.
+All detection patterns can now be overridden via an external TOML configuration file.
 
-**Needs:**
-
-- Optional external TOML/YAML config file that overrides built-in defaults
+**Implemented features:**
 - `--config path/to/config.toml` CLI flag
-- Keep "zero runtime deps" philosophy — parse manually or accept `serde` + `toml` as a deliberate exception
+- Optional external TOML config file that overrides built-in defaults
+- Support for all platform-specific patterns (Windows, macOS, Linux)
+- Zero runtime dependencies maintained — simple TOML parser implemented manually
+- Example config file: `sentrix.example.toml`
 
 ### 5. Structured Output (`--json`)
 
