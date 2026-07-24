@@ -41,12 +41,22 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
     let plist_patterns: Vec<String> = user_config
         .and_then(|c| c.macos.as_ref())
         .and_then(|c| c.suspicious_plist_patterns.clone())
-        .unwrap_or_else(|| SUSPICIOUS_PLIST_PATTERNS.iter().map(|s| s.to_string()).collect());
+        .unwrap_or_else(|| {
+            SUSPICIOUS_PLIST_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
 
     let cron_patterns: Vec<String> = user_config
         .and_then(|c| c.macos.as_ref())
         .and_then(|c| c.suspicious_cron_patterns.clone())
-        .unwrap_or_else(|| SUSPICIOUS_CRON_PATTERNS.iter().map(|s| s.to_string()).collect());
+        .unwrap_or_else(|| {
+            SUSPICIOUS_CRON_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
 
     let launchctl_patterns: Vec<String> = user_config
         .and_then(|c| c.macos.as_ref())
@@ -226,18 +236,9 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
                 let name_lower = name.to_lowercase();
 
                 let suspicious_patterns = [
-                    "com.",
-                    "filter",
-                    "proxy",
-                    "dns",
-                    "vpn",
-                    "firewall",
-                    "monitor",
-                    "capture",
+                    "com.", "filter", "proxy", "dns", "vpn", "firewall", "monitor", "capture",
                 ];
-                let is_suspicious = suspicious_patterns
-                    .iter()
-                    .any(|p| name_lower.contains(p));
+                let is_suspicious = suspicious_patterns.iter().any(|p| name_lower.contains(p));
                 if is_suspicious {
                     report.flag(format!(
                         "Suspicious network extension: {} ({})",

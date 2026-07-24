@@ -96,7 +96,12 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
     let scan_dirs: Vec<String> = user_config
         .and_then(|c| c.linux.as_ref())
         .and_then(|c| c.persistence_scan_dirs.clone())
-        .unwrap_or_else(|| PERSISTENCE_SCAN_DIRS.iter().map(|s| s.to_string()).collect());
+        .unwrap_or_else(|| {
+            PERSISTENCE_SCAN_DIRS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
 
     crate::scanner::recent_files::run(&scan_dirs, 3, report);
 }

@@ -87,12 +87,22 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
     let autorun_patterns: Vec<String> = user_config
         .and_then(|c| c.windows.as_ref())
         .and_then(|c| c.suspicious_autorun_patterns.clone())
-        .unwrap_or_else(|| SUSPICIOUS_AUTORUN_PATTERNS.iter().map(|s| s.to_string()).collect());
+        .unwrap_or_else(|| {
+            SUSPICIOUS_AUTORUN_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
 
     let task_patterns: Vec<String> = user_config
         .and_then(|c| c.windows.as_ref())
         .and_then(|c| c.suspicious_task_actions.clone())
-        .unwrap_or_else(|| SUSPICIOUS_TASK_ACTIONS.iter().map(|s| s.to_string()).collect());
+        .unwrap_or_else(|| {
+            SUSPICIOUS_TASK_ACTIONS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
 
     let powershell_patterns: Vec<String> = user_config
         .and_then(|c| c.windows.as_ref())
@@ -107,7 +117,12 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
     let service_patterns: Vec<String> = user_config
         .and_then(|c| c.windows.as_ref())
         .and_then(|c| c.suspicious_service_patterns.clone())
-        .unwrap_or_else(|| SUSPICIOUS_SERVICE_PATTERNS.iter().map(|s| s.to_string()).collect());
+        .unwrap_or_else(|| {
+            SUSPICIOUS_SERVICE_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
 
     let wmi_patterns: Vec<String> = user_config
         .and_then(|c| c.windows.as_ref())
