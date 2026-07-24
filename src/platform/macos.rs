@@ -3,13 +3,14 @@ use crate::config::{
     MACOS_NETWORK_EXTENSION_DIRS, MACOS_SHELL_RC_FILES, SUSPICIOUS_CRON_PATTERNS,
     SUSPICIOUS_LAUNCHCTL_OUTPUT, SUSPICIOUS_PLIST_PATTERNS,
 };
+use crate::config_loader::UserConfig;
 use crate::report::Report;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-pub fn check_processes(report: &mut Report) {
+pub fn check_processes(report: &mut Report, _user_config: Option<&UserConfig>) {
     report.section("Suspicious process locations");
     let sus_dirs = suspicious_dirs();
 
@@ -36,7 +37,42 @@ pub fn check_processes(report: &mut Report) {
     }
 }
 
-pub fn check_persistence(report: &mut Report) {
+pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) {
+    let plist_patterns: Vec<String> = user_config
+        .and_then(|c| c.macos.as_ref())
+        .and_then(|c| c.suspicious_plist_patterns.clone())
+        .unwrap_or_else(|| {
+            SUSPICIOUS_PLIST_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+
+    let cron_patterns: Vec<String> = user_config
+        .and_then(|c| c.macos.as_ref())
+        .and_then(|c| c.suspicious_cron_patterns.clone())
+        .unwrap_or_else(|| {
+            SUSPICIOUS_CRON_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+
+    let launchctl_patterns: Vec<String> = user_config
+        .and_then(|c| c.macos.as_ref())
+        .and_then(|c| c.suspicious_launchctl_output.clone())
+        .unwrap_or_else(|| {
+            SUSPICIOUS_LAUNCHCTL_OUTPUT
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+
+    let shell_rc_files: Vec<String> = user_config
+        .and_then(|c| c.macos.as_ref())
+        .and_then(|c| c.shell_rc_files.clone())
+        .unwrap_or_else(|| MACOS_SHELL_RC_FILES.iter().map(|s| s.to_string()).collect());
+
     report.section("Persistence (LaunchAgents / LaunchDaemons)");
 
     // Collect on-disk plist paths
@@ -56,9 +92,9 @@ pub fn check_persistence(report: &mut Report) {
                         on_disk_plists.insert(path_str.clone());
                         report.log(format!("LaunchAgent/Daemon: {}", path_str));
                         let lower = content.to_lowercase();
-                        if SUSPICIOUS_PLIST_PATTERNS
+                        if plist_patterns
                             .iter()
-                            .any(|pat| lower.contains(pat))
+                            .any(|pat| lower.contains(&pat.to_lowercase()))
                         {
                             report.flag(format!(
                                 "Suspicious plist (download/exec pattern): {}",
@@ -89,7 +125,7 @@ pub fn check_persistence(report: &mut Report) {
             let label = parts[2];
             // Check for suspicious patterns in the label
             let lower = label.to_lowercase();
-            if SUSPICIOUS_LAUNCHCTL_OUTPUT
+            if launchctl_patterns
                 .iter()
                 .any(|pat| lower.contains(&pat.to_lowercase()))
             {
@@ -117,9 +153,9 @@ pub fn check_persistence(report: &mut Report) {
                 }
                 report.log(format!("crontab ({}): {}", home, trimmed));
                 let lower = trimmed.to_lowercase();
-                if SUSPICIOUS_CRON_PATTERNS
+                if cron_patterns
                     .iter()
-                    .any(|pat| lower.contains(pat))
+                    .any(|pat| lower.contains(&pat.to_lowercase()))
                 {
                     report.flag(format!("Suspicious crontab entry: {}", trimmed));
                 }
@@ -154,7 +190,7 @@ pub fn check_persistence(report: &mut Report) {
     // Shell rc file scanning
     report.section("Persistence (shell rc files)");
     let home = std::env::var("HOME").unwrap_or_default();
-    for rc_name in MACOS_SHELL_RC_FILES {
+    for rc_name in &shell_rc_files {
         let rc = format!("{}/{}", home, rc_name);
         if let Ok(content) = fs::read_to_string(&rc) {
             let lower = content.to_lowercase();
@@ -200,18 +236,9 @@ pub fn check_persistence(report: &mut Report) {
                 let name_lower = name.to_lowercase();
 
                 let suspicious_patterns = [
-                    "com.",
-                    "filter",
-                    "proxy",
-                    "dns",
-                    "vpn",
-                    "firewall",
-                    "monitor",
-                    "capture",
+                    "com.", "filter", "proxy", "dns", "vpn", "firewall", "monitor", "capture",
                 ];
-                let is_suspicious = suspicious_patterns
-                    .iter()
-                    .any(|p| name_lower.contains(p));
+                let is_suspicious = suspicious_patterns.iter().any(|p| name_lower.contains(p));
                 if is_suspicious {
                     report.flag(format!(
                         "Suspicious network extension: {} ({})",

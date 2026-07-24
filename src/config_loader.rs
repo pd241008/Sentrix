@@ -95,8 +95,7 @@ fn parse_platform_config(
     config.suspicious_powershell_patterns =
         parse_string_array(section, "suspicious_powershell_patterns");
     config.suspicious_service_patterns = parse_string_array(section, "suspicious_service_patterns");
-    config.wmi_event_consumer_patterns =
-        parse_string_array(section, "wmi_event_consumer_patterns");
+    config.wmi_event_consumer_patterns = parse_string_array(section, "wmi_event_consumer_patterns");
     config.suspicious_plist_patterns = parse_string_array(section, "suspicious_plist_patterns");
     config.suspicious_cron_patterns = parse_string_array(section, "suspicious_cron_patterns");
     config.suspicious_launchctl_output = parse_string_array(section, "suspicious_launchctl_output");
