@@ -1,7 +1,7 @@
 use crate::config::{
     launch_agent_dirs, path_is_suspicious, suspicious_dirs, MACOS_KEXT_SCAN_DIRS,
-    MACOS_SHELL_RC_FILES, SUSPICIOUS_CRON_PATTERNS, SUSPICIOUS_LAUNCHCTL_OUTPUT,
-    SUSPICIOUS_PLIST_PATTERNS,
+    MACOS_NETWORK_EXTENSION_DIRS, MACOS_SHELL_RC_FILES, SUSPICIOUS_CRON_PATTERNS,
+    SUSPICIOUS_LAUNCHCTL_OUTPUT, SUSPICIOUS_PLIST_PATTERNS,
 };
 use crate::report::Report;
 use std::collections::HashSet;
@@ -181,6 +181,63 @@ pub fn check_persistence(report: &mut Report) {
                 let path = entry.path();
                 if path.extension().map(|e| e == "kext").unwrap_or(false) {
                     report.log(format!("Kernel extension: {}", path.display()));
+                }
+            }
+        }
+    }
+
+    // Network extension scanning
+    report.section("Persistence (network extensions)");
+    for net_ext_dir in MACOS_NETWORK_EXTENSION_DIRS {
+        let dir = Path::new(net_ext_dir);
+        if !dir.is_dir() {
+            continue;
+        }
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let name = path.file_name().unwrap_or_default().to_string_lossy();
+                let name_lower = name.to_lowercase();
+
+                let suspicious_patterns = [
+                    "com.",
+                    "filter",
+                    "proxy",
+                    "dns",
+                    "vpn",
+                    "firewall",
+                    "monitor",
+                    "capture",
+                ];
+                let is_suspicious = suspicious_patterns
+                    .iter()
+                    .any(|p| name_lower.contains(p));
+                if is_suspicious {
+                    report.flag(format!(
+                        "Suspicious network extension: {} ({})",
+                        name,
+                        path.display()
+                    ));
+                } else {
+                    report.log(format!("Network extension: {}", path.display()));
+                }
+
+                if path.is_dir() {
+                    if let Ok(inner) = fs::read_dir(&path) {
+                        for inner_entry in inner.flatten() {
+                            let inner_path = inner_entry.path();
+                            if inner_path.is_dir() {
+                                let inner_name =
+                                    inner_path.file_name().unwrap_or_default().to_string_lossy();
+                                if inner_name.ends_with(".systemextension") {
+                                    report.flag(format!(
+                                        "System extension (possible network interception): {}",
+                                        inner_path.display()
+                                    ));
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

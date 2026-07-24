@@ -98,6 +98,10 @@ pub const MACOS_SHELL_RC_FILES: &[&str] = &[".zshrc", ".bash_profile", ".zprofil
 #[cfg(target_os = "macos")]
 pub const MACOS_KEXT_SCAN_DIRS: &[&str] = &["/Library/Extensions", "/System/Library/Extensions"];
 
+#[cfg(target_os = "macos")]
+pub const MACOS_NETWORK_EXTENSION_DIRS: &[&str] =
+    &["/Library/SystemExtensions", "/Library/NetworkExtensions"];
+
 #[cfg(target_os = "windows")]
 pub const SUSPICIOUS_SERVICE_PATTERNS: &[&str] = &[
     "\\temp\\",
