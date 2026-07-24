@@ -118,3 +118,28 @@ pub const WMI_EVENT_CONSUMER_PATTERNS: &[&str] = &[
     "wscript",
     "cscript",
 ];
+
+#[cfg(target_os = "windows")]
+pub const SUSPICIOUS_POWERSHELL_PATTERNS: &[&str] = &[
+    "invoke-expression",
+    "iex(",
+    "iex (",
+    "downloadstring",
+    "invoke-webrequest",
+    "start-process",
+    "encodedcommand",
+    "frombase64string",
+    "bitstransfer",
+    "start-bitstransfer",
+    "invoke-cimmethod",
+    "get-wmiobject",
+    "set-maliciousvalue",
+    "hidden",
+    "-nop",
+    "-noni",
+    "bypass",
+    "downloadfile",
+    "invoke-restmethod",
+    "new-object net.webclient",
+    "invoke-atomictest",
+];
