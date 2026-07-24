@@ -3,12 +3,13 @@ use crate::config::{
     SUSPICIOUS_POWERSHELL_PATTERNS, SUSPICIOUS_SERVICE_PATTERNS, SUSPICIOUS_TASK_ACTIONS,
     WMI_EVENT_CONSUMER_PATTERNS,
 };
+use crate::config_loader::UserConfig;
 use crate::report::Report;
 use std::process::Command;
 use winreg::enums::*;
 use winreg::RegKey;
 
-pub fn check_processes(report: &mut Report) {
+pub fn check_processes(report: &mut Report, _user_config: Option<&UserConfig>) {
     report.section("Suspicious process locations");
     let sus_dirs = suspicious_dirs();
 
@@ -82,7 +83,42 @@ pub fn check_processes(report: &mut Report) {
     }
 }
 
-pub fn check_persistence(report: &mut Report) {
+pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) {
+    let autorun_patterns: Vec<String> = user_config
+        .and_then(|c| c.windows.as_ref())
+        .and_then(|c| c.suspicious_autorun_patterns.clone())
+        .unwrap_or_else(|| SUSPICIOUS_AUTORUN_PATTERNS.iter().map(|s| s.to_string()).collect());
+
+    let task_patterns: Vec<String> = user_config
+        .and_then(|c| c.windows.as_ref())
+        .and_then(|c| c.suspicious_task_actions.clone())
+        .unwrap_or_else(|| SUSPICIOUS_TASK_ACTIONS.iter().map(|s| s.to_string()).collect());
+
+    let powershell_patterns: Vec<String> = user_config
+        .and_then(|c| c.windows.as_ref())
+        .and_then(|c| c.suspicious_powershell_patterns.clone())
+        .unwrap_or_else(|| {
+            SUSPICIOUS_POWERSHELL_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+
+    let service_patterns: Vec<String> = user_config
+        .and_then(|c| c.windows.as_ref())
+        .and_then(|c| c.suspicious_service_patterns.clone())
+        .unwrap_or_else(|| SUSPICIOUS_SERVICE_PATTERNS.iter().map(|s| s.to_string()).collect());
+
+    let wmi_patterns: Vec<String> = user_config
+        .and_then(|c| c.windows.as_ref())
+        .and_then(|c| c.wmi_event_consumer_patterns.clone())
+        .unwrap_or_else(|| {
+            WMI_EVENT_CONSUMER_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+
     report.section("Persistence (Registry Run keys)");
     let hives: [(&RegKey, &str); 2] = [
         (&RegKey::predef(HKEY_CURRENT_USER), "HKCU"),
@@ -96,9 +132,9 @@ pub fn check_persistence(report: &mut Report) {
                     let val_str = format!("{:?}", value);
                     report.log(format!("{}\\{}: {} = {}", hive_name, rp, name, val_str));
                     let lower = val_str.to_lowercase();
-                    if SUSPICIOUS_AUTORUN_PATTERNS
+                    if autorun_patterns
                         .iter()
-                        .any(|pat| lower.contains(pat))
+                        .any(|pat| lower.contains(&pat.to_lowercase()))
                     {
                         report.flag(format!(
                             "Suspicious autorun entry in {}\\{}: {} = {}",
@@ -126,7 +162,7 @@ pub fn check_persistence(report: &mut Report) {
             if let Some(val) = line.strip_prefix("Task To Run:") {
                 current_action = val.trim().to_string();
                 let lower = current_action.to_lowercase();
-                if SUSPICIOUS_TASK_ACTIONS
+                if task_patterns
                     .iter()
                     .any(|pat| lower.contains(&pat.to_lowercase()))
                 {
@@ -186,9 +222,9 @@ pub fn check_persistence(report: &mut Report) {
                 continue;
             }
             let lower = line.to_lowercase();
-            if WMI_EVENT_CONSUMER_PATTERNS
+            if wmi_patterns
                 .iter()
-                .any(|pat| lower.contains(pat))
+                .any(|pat| lower.contains(&pat.to_lowercase()))
             {
                 report.flag(format!("Suspicious WMI event consumer command: {}", line));
             } else {
@@ -221,9 +257,9 @@ pub fn check_persistence(report: &mut Report) {
                 continue;
             }
             let lower = path_name.to_lowercase();
-            if SUSPICIOUS_SERVICE_PATTERNS
+            if service_patterns
                 .iter()
-                .any(|pat| lower.contains(pat))
+                .any(|pat| lower.contains(&pat.to_lowercase()))
             {
                 report.flag(format!(
                     "Suspicious service path: {} -> {}",
@@ -252,7 +288,7 @@ pub fn check_persistence(report: &mut Report) {
                 continue;
             }
             let lower = trimmed.to_lowercase();
-            if SUSPICIOUS_POWERSHELL_PATTERNS
+            if powershell_patterns
                 .iter()
                 .any(|pat| lower.contains(&pat.to_lowercase()))
             {

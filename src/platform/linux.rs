@@ -1,9 +1,10 @@
 use crate::config::{path_is_suspicious, suspicious_dirs, PERSISTENCE_SCAN_DIRS, SHELL_RC_FILES};
+use crate::config_loader::UserConfig;
 use crate::report::Report;
 use std::fs;
 use std::path::Path;
 
-pub fn check_processes(report: &mut Report) {
+pub fn check_processes(report: &mut Report, _user_config: Option<&UserConfig>) {
     report.section("Suspicious process locations");
     let sus_dirs = suspicious_dirs();
     let proc_dir = Path::new("/proc");
@@ -45,7 +46,7 @@ pub fn check_processes(report: &mut Report) {
     }
 }
 
-pub fn check_persistence(report: &mut Report) {
+pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) {
     report.section("Persistence (cron / systemd / shell rc)");
 
     if let Ok(content) = fs::read_to_string("/etc/crontab") {
@@ -71,8 +72,13 @@ pub fn check_persistence(report: &mut Report) {
         }
     }
 
+    let shell_rc_files: Vec<String> = user_config
+        .and_then(|c| c.linux.as_ref())
+        .and_then(|c| c.shell_rc_files.clone())
+        .unwrap_or_else(|| SHELL_RC_FILES.iter().map(|s| s.to_string()).collect());
+
     let home = std::env::var("HOME").unwrap_or_default();
-    for rc_name in SHELL_RC_FILES {
+    for rc_name in &shell_rc_files {
         let rc = format!("{}/{}", home, rc_name);
         if let Ok(content) = fs::read_to_string(&rc) {
             let lower = content.to_lowercase();
@@ -87,9 +93,10 @@ pub fn check_persistence(report: &mut Report) {
         }
     }
 
-    let scan_dirs: Vec<String> = PERSISTENCE_SCAN_DIRS
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+    let scan_dirs: Vec<String> = user_config
+        .and_then(|c| c.linux.as_ref())
+        .and_then(|c| c.persistence_scan_dirs.clone())
+        .unwrap_or_else(|| PERSISTENCE_SCAN_DIRS.iter().map(|s| s.to_string()).collect());
+
     crate::scanner::recent_files::run(&scan_dirs, 3, report);
 }
