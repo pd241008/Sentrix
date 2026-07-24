@@ -1,6 +1,7 @@
 use crate::config::{
     suspicious_dirs, PERSISTENCE_REGISTRY_RUN_PATHS, SUSPICIOUS_AUTORUN_PATTERNS,
-    SUSPICIOUS_SERVICE_PATTERNS, SUSPICIOUS_TASK_ACTIONS, WMI_EVENT_CONSUMER_PATTERNS,
+    SUSPICIOUS_POWERSHELL_PATTERNS, SUSPICIOUS_SERVICE_PATTERNS, SUSPICIOUS_TASK_ACTIONS,
+    WMI_EVENT_CONSUMER_PATTERNS,
 };
 use crate::report::Report;
 use std::process::Command;
@@ -234,6 +235,46 @@ pub fn check_persistence(report: &mut Report) {
         }
     } else {
         report.log("(i) Could not query WMI services.");
+    }
+
+    // PowerShell script block logging check
+    report.section("Persistence (PowerShell script block logging)");
+    let ps_script = "Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-PowerShell/Operational';Id=4104} -MaxEvents 50 2>$null | ForEach-Object { $_.Properties[2].Value }";
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", ps_script])
+        .output();
+    if let Ok(out) = output {
+        let text = String::from_utf8_lossy(&out.stdout);
+        let mut suspicious_count = 0;
+        for line in text.lines() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            let lower = trimmed.to_lowercase();
+            if SUSPICIOUS_POWERSHELL_PATTERNS
+                .iter()
+                .any(|pat| lower.contains(&pat.to_lowercase()))
+            {
+                suspicious_count += 1;
+                if suspicious_count <= 5 {
+                    report.flag(format!(
+                        "Suspicious PowerShell script block: {}",
+                        &trimmed[..trimmed.len().min(200)]
+                    ));
+                }
+            }
+        }
+        if suspicious_count > 5 {
+            report.flag(format!(
+                "... and {} more suspicious PowerShell script blocks",
+                suspicious_count - 5
+            ));
+        } else if suspicious_count == 0 {
+            report.log("(i) No suspicious PowerShell script blocks detected in recent events.");
+        }
+    } else {
+        report.log("(i) Could not query PowerShell script block logging events.");
     }
 
     crate::scanner::recent_files::run(

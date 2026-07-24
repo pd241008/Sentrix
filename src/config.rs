@@ -98,6 +98,10 @@ pub const MACOS_SHELL_RC_FILES: &[&str] = &[".zshrc", ".bash_profile", ".zprofil
 #[cfg(target_os = "macos")]
 pub const MACOS_KEXT_SCAN_DIRS: &[&str] = &["/Library/Extensions", "/System/Library/Extensions"];
 
+#[cfg(target_os = "macos")]
+pub const MACOS_NETWORK_EXTENSION_DIRS: &[&str] =
+    &["/Library/SystemExtensions", "/Library/NetworkExtensions"];
+
 #[cfg(target_os = "windows")]
 pub const SUSPICIOUS_SERVICE_PATTERNS: &[&str] = &[
     "\\temp\\",
@@ -117,4 +121,29 @@ pub const WMI_EVENT_CONSUMER_PATTERNS: &[&str] = &[
     "certutil",
     "wscript",
     "cscript",
+];
+
+#[cfg(target_os = "windows")]
+pub const SUSPICIOUS_POWERSHELL_PATTERNS: &[&str] = &[
+    "invoke-expression",
+    "iex(",
+    "iex (",
+    "downloadstring",
+    "invoke-webrequest",
+    "start-process",
+    "encodedcommand",
+    "frombase64string",
+    "bitstransfer",
+    "start-bitstransfer",
+    "invoke-cimmethod",
+    "get-wmiobject",
+    "set-maliciousvalue",
+    "hidden",
+    "-nop",
+    "-noni",
+    "bypass",
+    "downloadfile",
+    "invoke-restmethod",
+    "new-object net.webclient",
+    "invoke-atomictest",
 ];
