@@ -17,6 +17,10 @@ pub struct Cli {
     #[arg(short, long)]
     pub out: Option<String>,
 
+    /// Output report as JSON instead of plain text
+    #[arg(long)]
+    pub json: bool,
+
     /// Path to TOML configuration file with custom detection patterns
     #[arg(short, long)]
     pub config: Option<String>,
@@ -49,7 +53,9 @@ fn main() {
     };
     let report = run(&opts);
 
-    if let Some(path) = &cli.out {
+    if cli.json {
+        println!("{}", report.to_json());
+    } else if let Some(path) = &cli.out {
         if let Err(e) = std::fs::write(path, report.join()) {
             eprintln!("error: could not write report to {}: {}", path, e);
             std::process::exit(1);

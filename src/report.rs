@@ -1,5 +1,7 @@
+use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[derive(Debug, Clone, Serialize)]
 pub struct Report {
     pub lines: Vec<String>,
     pub findings: u32,
@@ -14,7 +16,7 @@ impl Default for Report {
 impl Report {
     pub fn new() -> Self {
         Report {
-            lines: Vec::new(),
+            lines: vec![now_string()],
             findings: 0,
         }
     }
@@ -35,6 +37,10 @@ impl Report {
 
     pub fn join(&self) -> String {
         self.lines.join("\n")
+    }
+
+    pub fn to_json(&self) -> String {
+        serde_json::to_string_pretty(self).unwrap_or_default()
     }
 }
 

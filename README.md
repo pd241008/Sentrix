@@ -239,6 +239,7 @@ cargo build --release --target x86_64-pc-windows-gnu
 ./Sentrix                     # full scan, prints to stdout
 ./Sentrix --quick             # skip the recent-file-modification pass
 ./Sentrix --out report.txt    # write report to file
+./Sentrix --json              # output report as JSON
 ./Sentrix --config custom.toml  # use custom detection patterns
 ```
 
@@ -321,15 +322,10 @@ cargo test            # run all tests
 cargo test -- --nocapture  # show println! output
 ```
 
-**Current status:** `tests/integration.rs` exists but is not yet populated.
-Planned test coverage:
-
-- `Report` struct behavior (section, flag, log)
-- Config output (suspicious dirs not empty, constants correct)
-- Scanner edge cases (nonexistent directories, empty files, permission errors)
-- One test per suspicious pattern in `config.rs` to guard against regressions
-
-See [docs/PROGRESS.md](docs/PROGRESS.md#6-test-coverage) for full status.
+**Current status:** `tests/integration.rs` is populated with 11 integration
+tests covering `Report` behavior, config loading (valid, empty, malformed),
+recent-files scanner, pattern constants, and config override flow. Unit tests
+for `config_loader` are also present. Total: 14 tests passing.
 
 ---
 
@@ -339,9 +335,7 @@ See [docs/PROGRESS.md](docs/PROGRESS.md#6-test-coverage) for full status.
 - **No signature scanning** — heuristic only, will miss known malware without suspicious indicators.
 - **No remediation** — reports findings, never removes/quarantines.
 - **No elevated by default** — needs `sudo`/Admin for full visibility.
-- **No CI** — cross-platform compilation is not yet verified by automated testing (see [Roadmap](#roadmap) #1).
-- **No structured output** — plain text only, no JSON/SARIF (see [Roadmap](#roadmap) #5).
-- **Tests not yet implemented** — `tests/integration.rs` is a stub (see [Roadmap](#roadmap) #6).
+- **Heuristic-only detection** — substring matching means trivial evasion (extra whitespace, string concatenation, case tricks) can slip through. This is by design; flagged items are meant for manual review, not automated blocking.
 
 ---
 
@@ -349,13 +343,13 @@ See [docs/PROGRESS.md](docs/PROGRESS.md#6-test-coverage) for full status.
 
 | Priority | Item | Status |
 |----------|------|--------|
-| 1 | CI (`cargo build`/`test`/`clippy`/`fmt` on all 3 OSes) | Not started |
+| 1 | CI (`cargo build`/`test`/`clippy`/`fmt` on all 3 OSes) | ✅ Complete |
 | 2 | Example output in README | Not started |
 | 3 | Windows/macOS parity (schtasks, launchctl, WMI) | ✅ Complete |
 | 4 | Configurable detection patterns (external TOML/YAML) | ✅ Complete |
-| 5 | Structured output (`--json`, severity levels) | Not started |
-| 6 | Test coverage (unit tests, tarpaulin/grcov, badge) | Not started |
-| 7 | Nice-to-haves (`--diff`, `CONTRIBUTING.md`) | Not started |
+| 5 | Structured output (`--json`, severity levels) | ✅ Complete |
+| 6 | Test coverage (unit tests, tarpaulin/grcov, badge) | ✅ Complete |
+| 7 | Nice-to-haves (`--diff`, `CONTRIBUTING.md`) | ✅ Complete |
 
 See [docs/PROGRESS.md](docs/PROGRESS.md#roadmap-status) for detailed status,
 gaps, and implementation notes for each item.

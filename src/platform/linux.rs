@@ -1,4 +1,6 @@
-use crate::config::{path_is_suspicious, suspicious_dirs, PERSISTENCE_SCAN_DIRS, SHELL_RC_FILES};
+use crate::config::{
+    path_is_suspicious, suspicious_dirs, PERSISTENCE_SCAN_DIRS, RECENT_FILE_DAYS, SHELL_RC_FILES,
+};
 use crate::config_loader::UserConfig;
 use crate::report::Report;
 use std::fs;
@@ -103,5 +105,11 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
                 .collect()
         });
 
-    crate::scanner::recent_files::run(&scan_dirs, 3, report);
+    crate::scanner::recent_files::run(
+        &scan_dirs,
+        user_config
+            .and_then(|c| c.recent_file_days)
+            .unwrap_or(RECENT_FILE_DAYS),
+        report,
+    );
 }
