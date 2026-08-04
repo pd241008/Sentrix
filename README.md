@@ -55,13 +55,7 @@ surface indicators that may warrant manual investigation.
 
 ```mermaid
 flowchart TD
-    CLI["main.rs<br/>CLI entry point"]
-    LIB["lib.rs<br/>public API"]
-    CFG["config.rs<br/>constants & paths"]
-    RPT["report.rs<br/>Report struct"]
-
-    CLI --> LIB
-    LIB --> SCANNER
+    CLI["main.rs<br/>CLI entry point"] --> LIB["lib.rs<br/>public API"]
 
     subgraph SCANNER["scanner/"]
         PROC["processes.rs"]
@@ -75,11 +69,23 @@ flowchart TD
         MAC["macos.rs"]
     end
 
-    SCANNER --> PLATFORM
-    SCANNER --> CFG
-    SCANNER --> RPT
-    PLATFORM --> CFG
-    PLATFORM --> RPT
+    CFG["config.rs<br/>constants & paths"]
+    RPT["report.rs<br/>Report struct"]
+
+    LIB --> PROC
+    LIB --> PERS
+    LIB --> RFIL
+    PROC --> CFG
+    PERS --> CFG
+    PROC --> RPT
+    PERS --> RPT
+    RFIL --> RPT
+    PROC --> LIN
+    PROC --> WIN
+    PROC --> MAC
+    PERS --> LIN
+    PERS --> WIN
+    PERS --> MAC
 ```
 
 ### Module Dependency Graph
