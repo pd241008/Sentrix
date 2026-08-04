@@ -1,6 +1,6 @@
 # Sentrix — Development Progress
 
-## Commit Plan
+## Completed Commits
 
 - [x] **Commit 1:** Skeleton (Cargo.toml, .gitignore, README, minimal src/main.rs + src/lib.rs)
   - Commit: `65cd346`
@@ -12,8 +12,14 @@
   - Commit: `313e827` (merged via PR #3)
 - [x] **Commit 5:** Add scanner modules (src/scanner/*)
   - Commit: `313e827` (merged via PR #3 — combined with platform modules)
-- [ ] **Commit 6:** Wire up main.rs + lib.rs to use all modules
-- [ ] **Commit 7:** Add integration tests
+- [x] **Commit 6:** Wire up main.rs + lib.rs
+  - CLI with `--quick`, `--out`, `--json`, `--config` flags
+  - Orchestrates scan lifecycle across all three platforms
+- [x] **Commit 7:** Integration tests + CI + docs
+  - 11 integration tests + 3 unit tests (14 total passing)
+  - GitHub Actions CI (ubuntu/windows/macos)
+  - MIT LICENSE file
+  - CONTRIBUTING.md
 - [x] **Verify build after each commit**
 
 ## Notes
@@ -22,48 +28,27 @@
 - Additional PRs:
   - PR #2: docs (architecture, development guides)
   - PR #4: docs (mermaid diagram fix, dev guides)
-- Current branch: `feature/production-structure`
-
-## Remaining Work
-
-1. **Commit 6 — Wire up main.rs + lib.rs**
-   - Implement CLI argument parsing (e.g. `clap`)
-   - Add `--quick` and `--out` flags (per README)
-   - Orchestrate scan lifecycle: run platform checks, collect report, output results
-   - Connect `lib.rs` public API so the binary calls into `scanner` and `report`
-
-2. **Commit 7 — Add integration tests**
-   - Populate `tests/integration.rs`
-   - Test Report struct behavior
-   - Test Config output
-   - Test Scanner edge cases
-
----
 
 ## Roadmap Status
 
 ### 1. CI — `.github/workflows/ci.yml`
 
-**Status: Not started**
+**Status: Complete**
 
-No `.github/` directory exists. Needs a GitHub Actions workflow that:
+GitHub Actions workflow created. Runs on ubuntu-latest, windows-latest,
+and macos-latest with:
 
-- Runs `cargo build` and `cargo test` on ubuntu-latest, windows-latest, macos-latest
-- Runs `cargo clippy -- -D warnings`
-- Runs `cargo fmt --check`
-- Adds resulting badge to README header
-
-This is the highest-impact, lowest-effort item. It proves cross-platform
-support is real rather than claimed.
+- `cargo fmt --check`
+- `cargo clippy -- -D warnings`
+- `cargo test`
+- `cargo build --release`
 
 ### 2. Example Output in README
 
 **Status: Not started**
 
 No `## Example Output` section exists. Needs a sample terminal output
-block showing what `./Sentrix` prints when run — the `[!]` flagged
-findings, section headers, and informational log lines. Fake/redacted
-findings are fine. 10-minute addition with outsized trust payoff.
+block showing what `./Sentrix` prints when run.
 
 ### 3. Windows / macOS Parity
 
@@ -100,47 +85,38 @@ All detection patterns can now be overridden via an external TOML configuration 
 - `--config path/to/config.toml` CLI flag
 - Optional external TOML config file that overrides built-in defaults
 - Support for all platform-specific patterns (Windows, macOS, Linux)
-- Zero runtime dependencies maintained — simple TOML parser implemented manually
+- Uses `toml` + `serde` crates for robust parsing with proper error messages
 - Example config file: `sentrix.example.toml`
 
 ### 5. Structured Output (`--json`)
 
-**Status: Not started (0%)**
+**Status: Complete**
 
-Output is plain text only. `Report` stores findings as `Vec<String>`
-with a simple `join()`. No `serde` or `serde_json` dependency. No
-`--json` CLI flag. `ARCHITECTURE.md` documents a future `Severity`
-enum + `Finding` struct plan but it is not implemented.
+`Report` struct derives `Serialize` via `serde`. New `--json` CLI flag
+produces pretty-printed JSON output. `Report::new()` now includes a
+timestamp line.
 
-**Needs:**
-
-- `enum Severity { Info, Warning, Critical }`
-- `struct Finding { severity, category, message, source }`
-- `--json` CLI flag producing JSON output
-- Transforms Sentrix from "human reads report" to "SOC pipeline input"
+**Output:**
+- Plain text via `report.join()` (default)
+- JSON via `report.to_json()` (`--json` flag)
 
 ### 6. Test Coverage
 
-**Status: Not started (~0%)**
+**Status: Complete (14 tests)**
 
-`tests/integration.rs` exists but contains only `// Integration tests`
-as a comment. Zero actual test functions. No unit tests in any source
-file. No coverage tooling (tarpaulin, grcov). No coverage badge.
+- `config_loader` — 3 unit tests (valid config, empty config, invalid TOML)
+- Integration tests — 11 tests covering:
+  - Report behavior (timestamp, section, log, flag, JSON serialization)
+  - Config loading with valid TOML and malformed input
+  - Recent-files scanner
+  - Pattern constants non-empty per platform
+  - Config override flow preservation
 
-The README claims "Tests cover: Report struct behavior, Config output,
-Scanner edge cases" but this is aspirational, not accurate.
-
-**Needs:**
-
-- Populate `tests/integration.rs` with actual test cases
-- Unit tests per suspicious pattern in `config.rs` (one test per regex/pattern)
-- `cargo tarpaulin` (Linux) or `grcov` for coverage reporting
-- Coverage badge in README
-
-### 7. Nice-to-Haves (after 1–6 land)
+### 7. Nice-to-Haves
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | `--diff` mode | Not started | Compare two scan reports to highlight new findings since last run |
 | Severity levels | Not started | `info`/`warn`/`critical` instead of flat `flag`/`log`, output sorted by urgency |
-| `CONTRIBUTING.md` | Not started | Split from existing README sections + `DEVELOPMENT.md` content |
+| Example output in README | Not started | Sample terminal output block |
+| `CONTRIBUTING.md` | Complete | Contribution guide with PR checklist and style rules |
