@@ -1,6 +1,7 @@
 use clap::Parser;
 use sentrix::config_loader;
-use sentrix::{run, ScanOptions};
+use sentrix::report::Report;
+use sentrix::{diff, run, ScanOptions};
 
 #[derive(Parser)]
 #[command(
@@ -20,6 +21,10 @@ pub struct Cli {
     /// Output report as JSON instead of plain text
     #[arg(long)]
     pub json: bool,
+
+    /// Compare scan results against a previous JSON report
+    #[arg(long, value_name = "FILE")]
+    pub diff: Option<String>,
 
     /// Path to TOML configuration file with custom detection patterns
     #[arg(short, long)]
@@ -53,14 +58,39 @@ fn main() {
     };
     let report = run(&opts);
 
-    if cli.json {
-        println!("{}", report.to_json());
-    } else if let Some(path) = &cli.out {
-        if let Err(e) = std::fs::write(path, report.join()) {
+    if let Some(prev_path) = &cli.diff {
+        let previous = match load_previous_report(prev_path) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("error: {}", e);
+                std::process::exit(1);
+            }
+        };
+        let result = diff::compute(&previous, &report);
+        if cli.json {
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&result).unwrap_or_default()
+            );
+        } else {
+            print!("{}", result.to_text());
+        }
+        std::process::exit(if result.new_findings.is_empty() { 0 } else { 2 });
+    }
+
+    if let Some(path) = &cli.out {
+        let content = if cli.json {
+            report.to_json()
+        } else {
+            report.join()
+        };
+        if let Err(e) = std::fs::write(path, content) {
             eprintln!("error: could not write report to {}: {}", path, e);
             std::process::exit(1);
         }
         eprintln!("report written to {} ({} findings)", path, report.findings);
+    } else if cli.json {
+        println!("{}", report.to_json());
     } else {
         print!("{}", report.join());
     }
@@ -68,4 +98,11 @@ fn main() {
     if report.findings > 0 {
         std::process::exit(2);
     }
+}
+
+fn load_previous_report(path: &str) -> Result<Report, String> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| format!("could not read previous report {}: {}", path, e))?;
+    serde_json::from_str(&content)
+        .map_err(|e| format!("could not parse previous report {}: {}", path, e))
 }

@@ -1,5 +1,6 @@
 pub mod config;
 pub mod config_loader;
+pub mod diff;
 pub mod platform;
 pub mod report;
 pub mod scanner;

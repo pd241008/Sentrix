@@ -1,6 +1,7 @@
 use sentrix::config;
 use sentrix::config_loader::load_config;
-use sentrix::report::Report;
+use sentrix::diff;
+use sentrix::report::{Report, Severity};
 use sentrix::scanner::recent_files;
 use std::fs;
 use std::io::Write;
@@ -52,6 +53,112 @@ fn test_report_to_json() {
     assert!(json.contains("\"lines\""));
     assert!(json.contains("== JSON Test =="));
     assert!(json.contains("[!] bad thing"));
+}
+
+#[test]
+fn test_report_severity_markers_and_counts() {
+    let mut report = Report::new();
+    report.log("info line");
+    report.warn("warning line");
+    report.critical("critical line");
+
+    assert_eq!(report.findings, 2);
+    assert_eq!(report.severity_counts.info, 1);
+    assert_eq!(report.severity_counts.warning, 1);
+    assert_eq!(report.severity_counts.critical, 1);
+
+    let out = report.join();
+    assert!(out.contains("info line"));
+    assert!(out.contains("[!] warning line"));
+    assert!(out.contains("[CRIT] critical line"));
+    assert!(!out.contains("[CRIT] warning line"));
+}
+
+#[test]
+fn test_report_json_entries_sorted_by_severity() {
+    let mut report = Report::new();
+    report.log("low");
+    report.critical("bad");
+    report.warn("meh");
+
+    let json = report.to_json();
+    let crit = json.find("\"Critical\"").unwrap();
+    let warn = json.find("\"Warning\"").unwrap();
+    let info = json.find("\"Info\"").unwrap();
+    assert!(crit < warn, "critical should sort before warning");
+    assert!(warn < info, "warning should sort before info");
+}
+
+#[test]
+fn test_report_round_trip_via_json() {
+    let mut report = Report::new();
+    report.section("S");
+    report.warn("warning line");
+    report.critical("critical line");
+
+    let json = report.to_json();
+    let restored: Report = serde_json::from_str(&json).unwrap();
+    assert_eq!(restored.findings, report.findings);
+    assert_eq!(restored.severity_counts, report.severity_counts);
+    assert_eq!(restored.entries.len(), report.entries.len());
+    assert_eq!(restored.entries[0].message, "critical line");
+    assert_eq!(restored.entries[0].severity, Severity::Critical);
+}
+
+// ===== Diff tests =====
+
+#[test]
+fn test_diff_computes_new_and_resolved() {
+    let mut previous = Report::new();
+    previous.section("S");
+    previous.warn("still here");
+    previous.critical("gone now");
+
+    let mut current = Report::new();
+    current.section("S");
+    current.warn("still here");
+    current.critical("brand new");
+
+    let result = diff::compute(&previous, &current);
+    assert_eq!(result.previous_findings, 2);
+    assert_eq!(result.current_findings, 2);
+    assert_eq!(result.new_findings.len(), 1);
+    assert_eq!(result.new_findings[0].message, "brand new");
+    assert_eq!(result.new_findings[0].severity, Severity::Critical);
+    assert_eq!(result.resolved_findings.len(), 1);
+    assert_eq!(result.resolved_findings[0].message, "gone now");
+    assert_eq!(result.new_critical(), 1);
+    assert_eq!(result.new_warning(), 0);
+}
+
+#[test]
+fn test_diff_no_changes() {
+    let mut previous = Report::new();
+    previous.warn("same finding");
+
+    let mut current = Report::new();
+    current.warn("same finding");
+
+    let result = diff::compute(&previous, &current);
+    assert!(result.new_findings.is_empty());
+    assert!(result.resolved_findings.is_empty());
+    assert_eq!(
+        result.to_text().contains("No new findings since last scan"),
+        true
+    );
+}
+
+#[test]
+fn test_diff_ignores_info_entries() {
+    let mut previous = Report::new();
+    previous.log("info line");
+
+    let mut current = Report::new();
+    current.log("info line changed");
+
+    let result = diff::compute(&previous, &current);
+    assert_eq!(result.new_findings.len(), 0);
+    assert_eq!(result.resolved_findings.len(), 0);
 }
 
 // ===== Config tests =====
