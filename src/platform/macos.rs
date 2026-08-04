@@ -1,6 +1,6 @@
 use crate::config::{
     launch_agent_dirs, path_is_suspicious, suspicious_dirs, MACOS_KEXT_SCAN_DIRS,
-    MACOS_NETWORK_EXTENSION_DIRS, MACOS_SHELL_RC_FILES, SUSPICIOUS_CRON_PATTERNS,
+    MACOS_NETWORK_EXTENSION_DIRS, MACOS_SHELL_RC_FILES, RECENT_FILE_DAYS, SUSPICIOUS_CRON_PATTERNS,
     SUSPICIOUS_LAUNCHCTL_OUTPUT, SUSPICIOUS_PLIST_PATTERNS,
 };
 use crate::config_loader::UserConfig;
@@ -275,7 +275,9 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
             "/Library/LaunchAgents".to_string(),
             "/Library/LaunchDaemons".to_string(),
         ],
-        3,
+        user_config
+            .and_then(|c| c.recent_file_days)
+            .unwrap_or(RECENT_FILE_DAYS),
         report,
     );
 }

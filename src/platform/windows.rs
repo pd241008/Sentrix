@@ -1,5 +1,5 @@
 use crate::config::{
-    suspicious_dirs, PERSISTENCE_REGISTRY_RUN_PATHS, SUSPICIOUS_AUTORUN_PATTERNS,
+    suspicious_dirs, PERSISTENCE_REGISTRY_RUN_PATHS, RECENT_FILE_DAYS, SUSPICIOUS_AUTORUN_PATTERNS,
     SUSPICIOUS_POWERSHELL_PATTERNS, SUSPICIOUS_SERVICE_PATTERNS, SUSPICIOUS_TASK_ACTIONS,
     WMI_EVENT_CONSUMER_PATTERNS,
 };
@@ -333,7 +333,9 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
             "C:\\Windows\\System32\\Tasks".to_string(),
             "C:\\Users\\Public".to_string(),
         ],
-        3,
+        user_config
+            .and_then(|c| c.recent_file_days)
+            .unwrap_or(RECENT_FILE_DAYS),
         report,
     );
 }
