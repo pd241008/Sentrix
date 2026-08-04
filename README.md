@@ -20,6 +20,7 @@ triage scanner, written in Rust with minimal dependencies.
 - [What It Checks](#what-it-checks)
 - [Build](#build)
 - [Usage](#usage)
+- [Example Output](#example-output)
 - [Configuration](#configuration)
 - [Adding a New Check](#adding-a-new-check)
 - [Adding a New Platform](#adding-a-new-platform)
@@ -240,6 +241,8 @@ cargo build --release --target x86_64-pc-windows-gnu
 ./Sentrix --quick             # skip the recent-file-modification pass
 ./Sentrix --out report.txt    # write report to file
 ./Sentrix --json              # output report as JSON
+./Sentrix --json --out report.json  # write JSON report (reuseable for --diff)
+./Sentrix --diff report.json  # compare against a previous JSON report
 ./Sentrix --config custom.toml  # use custom detection patterns
 ```
 
@@ -247,7 +250,72 @@ cargo build --release --target x86_64-pc-windows-gnu
 - **Windows:** Run from an elevated (Administrator) terminal for full registry access.
 - **macOS/Linux:** `sudo` to access root-owned paths you'd otherwise miss.
 
+### Severity Levels
+
+Findings carry a severity: **critical**, **warning**, or **info**. In plain
+text, critical findings are prefixed `[CRIT]` and warnings `[!]`; info lines
+are unmarked. The JSON output (`--json`) includes a structured `entries` array
+sorted by urgency (critical → warning → info) plus per-level counts.
+
+### Comparing Scans (`--diff`)
+
+Run once saving a JSON report, then compare a later run against it to see only
+what changed since the last scan:
+
+```bash
+./Sentrix --json --out baseline.json   # first run: save baseline
+./Sentrix --diff baseline.json         # later run: show new/resolved findings
+./Sentrix --diff baseline.json --json  # diff as JSON for pipelines
+```
+
+`--diff` exits with code `2` if new findings appeared since the baseline, `0`
+otherwise. The exit-code contract still applies to normal runs: `2` when any
+findings were flagged, `0` when clean.
+
 ---
+
+## Example Output
+
+A sample plain-text report (pathnames redacted) as it appears on Linux:
+
+```
+$ ./sentrix --quick
+epoch:1785838014
+
+== Suspicious process locations ==
+[!] PID 1831 is executing a deleted binary: /root/.opencode/bin/opencode (deleted) — common dropper/rootkit trick
+
+== Persistence (cron / systemd / shell rc) ==
+[CRIT] Reverse-shell pattern (/dev/tcp/) detected in /root/.bashrc
+[!] Suspicious download-and-execute pattern in /root/.profile
+
+== Recently modified files (last 3 days) ==
+Recently modified: /etc/ld.so.cache
+Recently modified: /etc/hosts
+Recently modified: /etc/cron.d/sample
+```
+
+The same scan as JSON highlights the structured severity data:
+
+```
+$ ./sentrix --quick --json
+{
+  "findings": 2,
+  "severity_counts": { "info": 3, "warning": 1, "critical": 1 },
+  "entries": [
+    {
+      "severity": "Critical",
+      "message": "Reverse-shell pattern (/dev/tcp/) detected in /root/.bashrc",
+      "section": "Persistence (cron / systemd / shell rc)"
+    },
+    {
+      "severity": "Warning",
+      "message": "PID 1831 is executing a deleted binary: ... (deleted)",
+      "section": "Suspicious process locations"
+    }
+  ]
+}
+```
 
 ## Configuration
 
@@ -322,10 +390,11 @@ cargo test            # run all tests
 cargo test -- --nocapture  # show println! output
 ```
 
-**Current status:** `tests/integration.rs` is populated with 11 integration
-tests covering `Report` behavior, config loading (valid, empty, malformed),
-recent-files scanner, pattern constants, and config override flow. Unit tests
-for `config_loader` are also present. Total: 14 tests passing.
+**Current status:** `tests/integration.rs` is populated with 17 integration
+tests covering `Report` behavior (severity markers, JSON round-trip, sorted
+entries), config loading (valid, empty, malformed), the recent-files scanner,
+pattern constants, config override flow, and `--diff` comparisons. Unit tests
+for `config_loader` are also present. Total: 20 tests passing.
 
 ---
 
@@ -344,7 +413,7 @@ for `config_loader` are also present. Total: 14 tests passing.
 | Priority | Item | Status |
 |----------|------|--------|
 | 1 | CI (`cargo build`/`test`/`clippy`/`fmt` on all 3 OSes) | ✅ Complete |
-| 2 | Example output in README | Not started |
+| 2 | Example output in README | ✅ Complete |
 | 3 | Windows/macOS parity (schtasks, launchctl, WMI) | ✅ Complete |
 | 4 | Configurable detection patterns (external TOML/YAML) | ✅ Complete |
 | 5 | Structured output (`--json`, severity levels) | ✅ Complete |

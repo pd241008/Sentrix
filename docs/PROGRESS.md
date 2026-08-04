@@ -45,10 +45,10 @@ and macos-latest with:
 
 ### 2. Example Output in README
 
-**Status: Not started**
+**Status: Complete**
 
-No `## Example Output` section exists. Needs a sample terminal output
-block showing what `./Sentrix` prints when run.
+`## Example Output` section added with a sample plain-text report and a JSON
+snippet showing structured severity data.
 
 ### 3. Windows / macOS Parity
 
@@ -100,23 +100,39 @@ timestamp line.
 - Plain text via `report.join()` (default)
 - JSON via `report.to_json()` (`--json` flag)
 
+**Severity levels (complete):**
+- `Severity { Info, Warning, Critical }` with `log()`, `warn()`, `critical()` methods
+  (`flag()` kept as an alias for `warn()`)
+- Plain text prefixes: `[CRIT]` for critical, `[!]` for warnings, unmarked info
+- JSON includes `severity_counts` and an `entries` array sorted by urgency
+  (critical → warning → info)
+- Findings count = warnings + criticals; exit code `2` when non-zero
+
+**`--diff` mode (complete):**
+- `--diff FILE` compares the current scan against a previous JSON report
+- Highlights new findings (critical/warning) since the baseline and resolved findings
+- `--json --out baseline.json` writes a reusable baseline; `--diff` supports `--json` output
+- Exit code `2` when new findings appeared since baseline, `0` otherwise
+
 ### 6. Test Coverage
 
-**Status: Complete (14 tests)**
+**Status: Complete (20 tests)**
 
 - `config_loader` — 3 unit tests (valid config, empty config, invalid TOML)
-- Integration tests — 11 tests covering:
+- Integration tests — 17 tests covering:
   - Report behavior (timestamp, section, log, flag, JSON serialization)
+  - Severity markers/counts, JSON entries sorted by severity, JSON round-trip
   - Config loading with valid TOML and malformed input
   - Recent-files scanner
   - Pattern constants non-empty per platform
   - Config override flow preservation
+  - `--diff` computations (new/resolved findings, no-changes, info ignored)
 
 ### 7. Nice-to-Haves
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| `--diff` mode | Not started | Compare two scan reports to highlight new findings since last run |
-| Severity levels | Not started | `info`/`warn`/`critical` instead of flat `flag`/`log`, output sorted by urgency |
-| Example output in README | Not started | Sample terminal output block |
+| `--diff` mode | Complete | Compare two scan reports to highlight new findings since last run |
+| Severity levels | Complete | `info`/`warn`/`critical` instead of flat `flag`/`log`, JSON output sorted by urgency |
+| Example output in README | Complete | Sample terminal output block |
 | `CONTRIBUTING.md` | Complete | Contribution guide with PR checklist and style rules |
