@@ -168,14 +168,13 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
     if let Ok(out) = output {
         let text = String::from_utf8_lossy(&out.stdout);
         let mut current_task = String::new();
-        let mut current_action = String::new();
         for line in text.lines() {
             let line = line.trim();
             if let Some(val) = line.strip_prefix("TaskName:") {
                 current_task = val.trim().to_string();
             }
             if let Some(val) = line.strip_prefix("Task To Run:") {
-                current_action = val.trim().to_string();
+                let current_action = val.trim().to_string();
                 let lower = current_action.to_lowercase();
                 if task_patterns
                     .iter()
