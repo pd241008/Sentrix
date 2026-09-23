@@ -144,9 +144,9 @@ fn test_diff_no_changes() {
     let result = diff::compute(&previous, &current);
     assert!(result.new_findings.is_empty());
     assert!(result.resolved_findings.is_empty());
-    assert_eq!(
+    assert!(
         result.to_text().contains("No new findings since last scan"),
-        true
+        "diff text should state there are no new findings"
     );
 }
 
