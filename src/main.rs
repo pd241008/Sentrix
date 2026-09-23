@@ -88,14 +88,18 @@ fn main() {
             eprintln!("error: could not write report to {}: {}", path, e);
             std::process::exit(1);
         }
-        eprintln!("report written to {} ({} findings)", path, report.findings);
+        eprintln!(
+            "report written to {} ({} findings)",
+            path,
+            report.findings()
+        );
     } else if cli.json {
         println!("{}", report.to_json());
     } else {
         print!("{}", report.join());
     }
 
-    if report.findings > 0 {
+    if report.findings() > 0 {
         std::process::exit(2);
     }
 }

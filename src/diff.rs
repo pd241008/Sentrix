@@ -72,35 +72,35 @@ fn key(e: &Entry) -> (String, String) {
 
 pub fn compute(previous: &Report, current: &Report) -> DiffResult {
     let prev: BTreeSet<(String, String)> = previous
-        .entries
+        .entries()
         .iter()
         .filter(|e| e.severity != Severity::Info)
         .map(key)
         .collect();
     let cur: BTreeSet<(String, String)> = current
-        .entries
+        .entries()
         .iter()
         .filter(|e| e.severity != Severity::Info)
         .map(key)
         .collect();
 
     let new_findings: Vec<Entry> = current
-        .entries
+        .entries()
         .iter()
         .filter(|e| e.severity != Severity::Info && !prev.contains(&key(e)))
         .cloned()
         .collect();
 
     let resolved_findings: Vec<Entry> = previous
-        .entries
+        .entries()
         .iter()
         .filter(|e| e.severity != Severity::Info && !cur.contains(&key(e)))
         .cloned()
         .collect();
 
     DiffResult {
-        previous_findings: previous.findings,
-        current_findings: current.findings,
+        previous_findings: previous.findings(),
+        current_findings: current.findings(),
         new_findings,
         resolved_findings,
     }
