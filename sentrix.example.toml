@@ -67,6 +67,37 @@ wmi_event_consumer_patterns = [
 suspicious_plist_patterns = ["curl", "wget", "/tmp/", "base64"]
 suspicious_cron_patterns = ["curl", "wget", "base64", "/tmp/"]
 suspicious_launchctl_output = ["curl", "wget", "/tmp/", "base64", "mshta", "powershell"]
+
+# Network/system extension name patterns that trigger a flag.
+network_extension_patterns = ["filter", "proxy", "dns", "vpn", "firewall", "monitor", "capture"]
+
+# Identifier prefixes that exempt an extension from flagging. Without an
+# allowlist, standard macOS bundle IDs (almost all starting with "com.")
+# would flood the report with false positives.
+network_extension_allowlist = [
+    "com.apple.",
+    "com.cisco.",
+    "com.crowdstrike.",
+    "com.dtna.",
+    "com.egnyte.",
+    "com.google.",
+    "com.cloudflare.",
+    "com.jamf.",
+    "com.kandji.",
+    "com.malwarebytes.",
+    "com.microsoft.",
+    "com.netskope.",
+    "com.paloaltonetworks.",
+    "com.sentinelone.",
+    "com.sophos.",
+    "com.1e.",
+    "com.1password.",
+    "com.zscaler.",
+    "org.mozilla.",
+    "ch.protonvpn.",
+    "net.tunnelblick.",
+]
+
 shell_rc_files = [".zshrc", ".bash_profile", ".zprofile"]
 
 # Linux-specific settings

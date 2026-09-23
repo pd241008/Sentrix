@@ -1,7 +1,8 @@
 use crate::config::{
     launch_agent_dirs, path_is_suspicious, suspicious_dirs, MACOS_KEXT_SCAN_DIRS,
-    MACOS_NETWORK_EXTENSION_DIRS, MACOS_SHELL_RC_FILES, RECENT_FILE_DAYS, SUSPICIOUS_CRON_PATTERNS,
-    SUSPICIOUS_LAUNCHCTL_OUTPUT, SUSPICIOUS_PLIST_PATTERNS,
+    MACOS_NETWORK_EXTENSION_DIRS, MACOS_NETWORK_EXT_ALLOWLIST, MACOS_NETWORK_EXT_PATTERNS,
+    MACOS_SHELL_RC_FILES, RECENT_FILE_DAYS, SUSPICIOUS_CRON_PATTERNS, SUSPICIOUS_LAUNCHCTL_OUTPUT,
+    SUSPICIOUS_PLIST_PATTERNS,
 };
 use crate::config_loader::UserConfig;
 use crate::report::Report;
@@ -223,7 +224,29 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
     }
 
     // Network extension scanning
+    // Patterns and allowlist are configurable; built-ins live in config.rs.
+    // The allowlist keeps well-known vendors from being flagged merely for
+    // following Apple's reverse-DNS bundle-ID convention (see config.rs).
     report.section("Persistence (network extensions)");
+    let ext_patterns: Vec<String> = user_config
+        .and_then(|c| c.macos.as_ref())
+        .and_then(|c| c.network_extension_patterns.clone())
+        .unwrap_or_else(|| {
+            MACOS_NETWORK_EXT_PATTERNS
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+    let ext_allowlist: Vec<String> = user_config
+        .and_then(|c| c.macos.as_ref())
+        .and_then(|c| c.network_extension_allowlist.clone())
+        .unwrap_or_else(|| {
+            MACOS_NETWORK_EXT_ALLOWLIST
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        });
+
     for net_ext_dir in MACOS_NETWORK_EXTENSION_DIRS {
         let dir = Path::new(net_ext_dir);
         if !dir.is_dir() {
@@ -235,10 +258,19 @@ pub fn check_persistence(report: &mut Report, user_config: Option<&UserConfig>) 
                 let name = path.file_name().unwrap_or_default().to_string_lossy();
                 let name_lower = name.to_lowercase();
 
-                let suspicious_patterns = [
-                    "com.", "filter", "proxy", "dns", "vpn", "firewall", "monitor", "capture",
-                ];
-                let is_suspicious = suspicious_patterns.iter().any(|p| name_lower.contains(p));
+                // Allowlist wins first: bundle IDs like "com.apple.", or
+                // known vendor prefixes, are normal macOS identifiers.
+                if ext_allowlist
+                    .iter()
+                    .any(|p| name_lower.contains(&p.to_lowercase()))
+                {
+                    report.log(format!("Network extension: {}", path.display()));
+                    continue;
+                }
+
+                let is_suspicious = ext_patterns
+                    .iter()
+                    .any(|p| name_lower.contains(&p.to_lowercase()));
                 if is_suspicious {
                     report.flag(format!(
                         "Suspicious network extension: {} ({})",

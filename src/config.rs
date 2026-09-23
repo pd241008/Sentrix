@@ -102,6 +102,40 @@ pub const MACOS_KEXT_SCAN_DIRS: &[&str] = &["/Library/Extensions", "/System/Libr
 pub const MACOS_NETWORK_EXTENSION_DIRS: &[&str] =
     &["/Library/SystemExtensions", "/Library/NetworkExtensions"];
 
+#[cfg(target_os = "macos")]
+pub const MACOS_NETWORK_EXT_PATTERNS: &[&str] = &[
+    "filter", "proxy", "dns", "vpn", "firewall", "monitor", "capture",
+];
+
+/// Identifier prefixes (bundle IDs, vendor names) of well-known legitimate
+/// network/system extensions. Matching entries are logged, not flagged.
+/// The old heuristic flagged anything containing "com.", which matches
+/// virtually every macOS bundle ID and produced mass false positives.
+#[cfg(target_os = "macos")]
+pub const MACOS_NETWORK_EXT_ALLOWLIST: &[&str] = &[
+    "com.apple.",
+    "com.cisco.",
+    "com.crowdstrike.",
+    "com.dtna.",
+    "com.egnyte.",
+    "com.google.",
+    "com.cloudflare.",
+    "com.jamf.",
+    "com.kandji.",
+    "com.malwarebytes.",
+    "com.microsoft.",
+    "com.netskope.",
+    "com.paloaltonetworks.",
+    "com.sentinelone.",
+    "com.sophos.",
+    "com.1e.",
+    "com.1password.",
+    "com.zscaler.",
+    "org.mozilla.",
+    "ch.protonvpn.",
+    "net.tunnelblick.",
+];
+
 #[cfg(target_os = "windows")]
 pub const SUSPICIOUS_SERVICE_PATTERNS: &[&str] = &[
     "\\temp\\",

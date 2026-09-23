@@ -19,6 +19,11 @@ pub struct PlatformConfig {
     pub suspicious_plist_patterns: Option<Vec<String>>,
     pub suspicious_cron_patterns: Option<Vec<String>>,
     pub suspicious_launchctl_output: Option<Vec<String>>,
+    /// macOS only: name patterns that flag a network/system extension.
+    pub network_extension_patterns: Option<Vec<String>>,
+    /// macOS only: identifier prefixes that exempt a network/system extension
+    /// from flagging (e.g. "com.apple.", "com.microsoft.").
+    pub network_extension_allowlist: Option<Vec<String>>,
     pub shell_rc_files: Option<Vec<String>>,
     pub persistence_scan_dirs: Option<Vec<String>>,
 }
