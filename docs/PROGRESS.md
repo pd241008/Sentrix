@@ -75,6 +75,13 @@ All three platforms have process metadata, persistence, and recent file detectio
 
 **Note:** Neither Windows nor macOS can detect deleted-but-running binaries (Linux `/proc` advantage).
 
+**Windows tooling notes:** `wmic` is deprecated/removed on recent Windows 11
+builds, so the services, process, and WMI checks fall back to PowerShell CIM
+(`Get-CimInstance` / `Get-ScheduledTask`) when `wmic` is unavailable. All
+command output is decoded BOM-aware (wmic emits UTF-16LE), and CSV parsing is
+quote-aware with header-based column lookup (`win_helpers.rs`), so paths
+containing commas or non-ASCII text are handled correctly.
+
 ### 4. Configurable Detection Patterns
 
 **Status: Complete (100%)**
@@ -85,6 +92,10 @@ All detection patterns can now be overridden via an external TOML configuration 
 - `--config path/to/config.toml` CLI flag
 - Optional external TOML config file that overrides built-in defaults
 - Support for all platform-specific patterns (Windows, macOS, Linux)
+- macOS network-extension patterns and allowlist (`network_extension_patterns`,
+  `network_extension_allowlist`) — the allowlist prevents well-known vendors
+  (Apple, Microsoft, CrowdStrike, ...) from being flagged merely for using
+  standard reverse-DNS bundle IDs
 - Uses `toml` + `serde` crates for robust parsing with proper error messages
 - Example config file: `sentrix.example.toml`
 
@@ -116,9 +127,16 @@ timestamp line.
 
 ### 6. Test Coverage
 
-**Status: Complete (20 tests)**
+**Status: Complete (28 tests)**
 
 - `config_loader` — 3 unit tests (valid config, empty config, invalid TOML)
+- `report` — 6 unit tests (ISO-8601 timestamp conversion incl. leap-day and
+  century edge cases, timestamp line format, section rendering and merge
+  behavior, legacy-JSON round-trip for old `--diff` baselines, JSON lines)
+- `scanner::recent_files` — 2 unit tests (nested subdirectories are scanned,
+  depth cap stops runaway walks)
+- `platform::win_helpers` (Windows target) — 9 unit tests (UTF-16LE/BE and
+  BOM handling, quote-aware CSV, header-based CSV table lookup)
 - Integration tests — 17 tests covering:
   - Report behavior (timestamp, section, log, flag, JSON serialization)
   - Severity markers/counts, JSON entries sorted by severity, JSON round-trip
@@ -127,6 +145,10 @@ timestamp line.
   - Pattern constants non-empty per platform
   - Config override flow preservation
   - `--diff` computations (new/resolved findings, no-changes, info ignored)
+
+**Coverage measurement:** CI runs `cargo llvm-cov` on ubuntu-latest and
+uploads the LCOV report to Codecov (`coverage` job in `.github/workflows/ci.yml`).
+Add a repo badge linking to the Codecov page once enabled there.
 
 ### 7. Nice-to-Haves
 

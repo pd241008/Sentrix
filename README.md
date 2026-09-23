@@ -225,8 +225,8 @@ cargo build --release
 ```
 
 Output binary:
-- Linux/macOS: `target/release/Sentrix`
-- Windows: `target\release\Sentrix.exe`
+- Linux/macOS: `target/release/sentrix`
+- Windows: `target\release\sentrix.exe`
 
 ### Cross-Compilation
 
@@ -243,13 +243,13 @@ cargo build --release --target x86_64-pc-windows-gnu
 ## Usage
 
 ```
-./Sentrix                     # full scan, prints to stdout
-./Sentrix --quick             # skip the recent-file-modification pass
-./Sentrix --out report.txt    # write report to file
-./Sentrix --json              # output report as JSON
-./Sentrix --json --out report.json  # write JSON report (reuseable for --diff)
-./Sentrix --diff report.json  # compare against a previous JSON report
-./Sentrix --config custom.toml  # use custom detection patterns
+./sentrix                     # full scan, prints to stdout
+./sentrix --quick             # skip the recent-file-modification pass
+./sentrix --out report.txt    # write report to file
+./sentrix --json              # output report as JSON
+./sentrix --json --out report.json  # write JSON report (reuseable for --diff)
+./sentrix --diff report.json  # compare against a previous JSON report
+./sentrix --config custom.toml  # use custom detection patterns
 ```
 
 **Privileges:**
@@ -269,9 +269,9 @@ Run once saving a JSON report, then compare a later run against it to see only
 what changed since the last scan:
 
 ```bash
-./Sentrix --json --out baseline.json   # first run: save baseline
-./Sentrix --diff baseline.json         # later run: show new/resolved findings
-./Sentrix --diff baseline.json --json  # diff as JSON for pipelines
+./sentrix --json --out baseline.json   # first run: save baseline
+./sentrix --diff baseline.json         # later run: show new/resolved findings
+./sentrix --diff baseline.json --json  # diff as JSON for pipelines
 ```
 
 `--diff` exits with code `2` if new findings appeared since the baseline, `0`
@@ -286,7 +286,7 @@ A sample plain-text report (pathnames redacted) as it appears on Linux:
 
 ```
 $ ./sentrix --quick
-epoch:1785838014
+scan time: 2026-09-22T15:33:00Z (epoch:1785838014)
 
 == Suspicious process locations ==
 [!] PID 1831 is executing a deleted binary: /root/.opencode/bin/opencode (deleted) — common dropper/rootkit trick
@@ -337,6 +337,8 @@ All tunable constants live in `src/config.rs` and can be overridden via a TOML c
 | `SUSPICIOUS_PLIST_PATTERNS` | macOS plist content patterns to flag | 4 patterns |
 | `SUSPICIOUS_CRON_PATTERNS` | macOS crontab entry patterns to flag | 4 patterns |
 | `SUSPICIOUS_LAUNCHCTL_OUTPUT` | macOS launchctl label patterns to flag | 6 patterns |
+| `MACOS_NETWORK_EXT_PATTERNS` | macOS network/system extension name patterns to flag | 7 patterns |
+| `MACOS_NETWORK_EXT_ALLOWLIST` | macOS extension identifier prefixes exempt from flagging | 21 prefixes |
 | `SHELL_RC_FILES` | Linux shell rc files to inspect | `.bashrc`, `.profile` |
 | `PERSISTENCE_SCAN_DIRS` | Linux dirs to scan for recent modifications | `/etc`, `/usr/local/bin` |
 
@@ -398,9 +400,12 @@ cargo test -- --nocapture  # show println! output
 
 **Current status:** `tests/integration.rs` is populated with 17 integration
 tests covering `Report` behavior (severity markers, JSON round-trip, sorted
-entries), config loading (valid, empty, malformed), the recent-files scanner,
-pattern constants, config override flow, and `--diff` comparisons. Unit tests
-for `config_loader` are also present. Total: 20 tests passing.
+entries), config loading (valid, empty, malformed), the recent-files scanner
+(including nested directories and the depth cap), pattern constants, config
+override flow, and `--diff` comparisons. Unit tests also cover `config_loader`,
+`Report` rendering/round-trips, the ISO-8601 timestamp conversion, and the
+Windows output helpers (UTF-16 decoding, quote-aware CSV). Total: 28 tests
+passing. CI measures coverage with `cargo-llvm-cov` and uploads it to Codecov.
 
 ---
 
@@ -423,7 +428,7 @@ for `config_loader` are also present. Total: 20 tests passing.
 | 3 | Windows/macOS parity (schtasks, launchctl, WMI) | ✅ Complete |
 | 4 | Configurable detection patterns (external TOML/YAML) | ✅ Complete |
 | 5 | Structured output (`--json`, severity levels) | ✅ Complete |
-| 6 | Test coverage (unit tests, tarpaulin/grcov, badge) | ✅ Complete |
+| 6 | Test coverage (unit tests, cargo-llvm-cov in CI, Codecov upload) | ✅ Complete |
 | 7 | Nice-to-haves (`--diff`, `CONTRIBUTING.md`) | ✅ Complete |
 
 See [docs/PROGRESS.md](docs/PROGRESS.md#roadmap-status) for detailed status,

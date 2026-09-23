@@ -168,34 +168,28 @@ The tradeoff is more code (e.g., manual timestamp formatting instead of
 
 ---
 
-## Why `Report` Uses `Vec<String>` Instead of Structured Data?
+## Why `Report` Stores Structured Entries, Not Rendered Strings
 
-Findings are stored as formatted strings, not as structured enums/structs.
-
-**Why (for now):** The original design was a simple text reporter. This
-was kept for v0.1.0 to avoid over-engineering before the check set is
-stable.
-
-**Future improvement:** Once the check set stabilizes, `Report` should use
-structured findings:
+Findings are stored once, as structured `Entry` values (severity, message,
+section), plus an ordered list of section titles. The plain-text view
+(`join()`) and the JSON view (`to_json()`) are *derived* at output time from
+that single source of truth, so the rendered text can never drift out of
+sync with the entries it came from.
 
 ```rust
 enum Severity { Info, Warning, Critical }
 
-struct Finding {
+struct Entry {
     severity: Severity,
-    category: String,
+    section: String,
     message: String,
-    source: String,
 }
 ```
 
 This enables JSON/SARIF output, filtering by severity, and programmatic
-consumption. The current string-based approach is a placeholder.
-
-> **Roadmap:** Structured output (`--json`) is tracked as priority #5 in
-> [PROGRESS.md](PROGRESS.md#5-structured-output---json). The `Severity`
-> enum and `Finding` struct shown above are the planned implementation.
+consumption. (An earlier iteration stored pre-rendered `Vec<String>` lines
+alongside the entries — duplicated state that could and did drift; it was
+removed once the entry set stabilized.)
 
 ---
 
@@ -237,5 +231,5 @@ a triage scanner should be predictable and debuggable.
 | `platform/` with `#[cfg]` | Clean compile-time platform dispatch |
 | `scanner/` orchestration | Thin layer, easy to add/remove checks |
 | Zero deps (except `winreg`) | Security, auditability, tiny binary |
-| String-based `Report` | Simplicity for v0.1.0, structured later |
+| Structured `Report` entries | Single source of truth; text/JSON derived |
 | Linear scan flow | Predictable, debuggable, no concurrency bugs |

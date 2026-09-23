@@ -12,3 +12,8 @@ pub use windows::*;
 mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::*;
+
+// Windows-only helpers for decoding/parsing external command output.
+// cfg-gated so non-Windows builds never see it.
+#[cfg(target_os = "windows")]
+pub mod win_helpers;

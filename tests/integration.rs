@@ -11,9 +11,11 @@ use std::io::Write;
 #[test]
 fn test_report_new_has_timestamp() {
     let report = Report::new();
-    assert_eq!(report.findings, 0);
-    assert!(!report.lines.is_empty());
-    assert!(report.lines[0].starts_with("epoch:"));
+    assert_eq!(report.findings(), 0);
+    let output = report.join();
+    let first = output.lines().next().unwrap();
+    assert!(first.starts_with("scan time: "), "got: {}", first);
+    assert!(first.contains("epoch:"));
 }
 
 #[test]
@@ -27,7 +29,7 @@ fn test_report_section_and_log() {
     assert!(output.contains("== Test Section =="));
     assert!(output.contains("a log line"));
     assert!(output.contains("another log line"));
-    assert_eq!(report.findings, 0);
+    assert_eq!(report.findings(), 0);
 }
 
 #[test]
@@ -35,7 +37,7 @@ fn test_report_flag_increments_findings() {
     let mut report = Report::new();
     report.flag("suspicious thing 1");
     report.flag("suspicious thing 2");
-    assert_eq!(report.findings, 2);
+    assert_eq!(report.findings(), 2);
 
     let output = report.join();
     assert!(output.contains("[!] suspicious thing 1"));
@@ -62,10 +64,10 @@ fn test_report_severity_markers_and_counts() {
     report.warn("warning line");
     report.critical("critical line");
 
-    assert_eq!(report.findings, 2);
-    assert_eq!(report.severity_counts.info, 1);
-    assert_eq!(report.severity_counts.warning, 1);
-    assert_eq!(report.severity_counts.critical, 1);
+    assert_eq!(report.findings(), 2);
+    assert_eq!(report.severity_counts().info, 1);
+    assert_eq!(report.severity_counts().warning, 1);
+    assert_eq!(report.severity_counts().critical, 1);
 
     let out = report.join();
     assert!(out.contains("info line"));
@@ -98,11 +100,11 @@ fn test_report_round_trip_via_json() {
 
     let json = report.to_json();
     let restored: Report = serde_json::from_str(&json).unwrap();
-    assert_eq!(restored.findings, report.findings);
-    assert_eq!(restored.severity_counts, report.severity_counts);
-    assert_eq!(restored.entries.len(), report.entries.len());
-    assert_eq!(restored.entries[0].message, "critical line");
-    assert_eq!(restored.entries[0].severity, Severity::Critical);
+    assert_eq!(restored.findings(), report.findings());
+    assert_eq!(restored.severity_counts(), report.severity_counts());
+    assert_eq!(restored.entries().len(), report.entries().len());
+    assert_eq!(restored.entries()[0].message, "critical line");
+    assert_eq!(restored.entries()[0].severity, Severity::Critical);
 }
 
 // ===== Diff tests =====
@@ -142,9 +144,9 @@ fn test_diff_no_changes() {
     let result = diff::compute(&previous, &current);
     assert!(result.new_findings.is_empty());
     assert!(result.resolved_findings.is_empty());
-    assert_eq!(
+    assert!(
         result.to_text().contains("No new findings since last scan"),
-        true
+        "diff text should state there are no new findings"
     );
 }
 
